@@ -1,0 +1,105 @@
+{
+  "active_positions": {
+    "BTCUSDT_1762046000": {
+      "position_id": "BTCUSDT_1762046000",
+      "symbol": "BTCUSDT",
+      "entry_price": 109998.0,
+      "stop_loss": 107798.04,
+      "take_profits": [
+        111977.964,
+        113957.928,
+        116597.88
+      ],
+      "direction": "LONG",
+      "status": "CLOSED",
+      "current_size": 100,
+      "chat_id": -1002446760333,
+      "created_at": "2025-11-02T02:13:20.228996",
+      "executed_tps": [],
+      "closed_at": "2025-11-03T21:10:38.296677",
+      "close_price": 106788.0,
+      "close_reason": "MANUAL_CLOSE"
+    },
+    "SOLUSDT_1762046007": {
+      "position_id": "SOLUSDT_1762046007",
+      "symbol": "SOLUSDT",
+      "entry_price": 185.15,
+      "stop_loss": 181.447,
+      "take_profits": [
+        188.48270000000002,
+        191.8154,
+        196.25900000000001
+      ],
+      "direction": "LONG",
+      "status": "CLOSED",
+      "current_size": 100,
+      "chat_id": -1002446760333,
+      "created_at": "2025-11-02T02:13:27.638825",
+      "executed_tps": [],
+      "closed_at": "2025-11-03T21:10:44.208683",
+      "close_price": 166.12,
+      "close_reason": "MANUAL_CLOSE"
+    },
+    "PEPEUSDT_1762046114": {
+      "position_id": "PEPEUSDT_1762046114",
+      "symbol": "PEPEUSDT",
+      "entry_price": 6.67e-06,
+      "stop_loss": 6.56995e-06,
+      "take_profits": [
+        6.7750525e-06,
+        6.880104999999999e-06,
+        7.020174999999999e-06
+      ],
+      "direction": "LONG",
+      "status": "CLOSED",
+      "current_size": 100,
+      "chat_id": -1002446760333,
+      "created_at": "2025-11-02T02:15:14.004418",
+      "executed_tps": [],
+      "closed_at": "2025-11-03T21:10:49.134547",
+      "close_price": 5.79e-06,
+      "close_reason": "MANUAL_CLOSE"
+    },
+    "PEPEUSDT_1762046198": {
+      "position_id": "PEPEUSDT_1762046198",
+      "symbol": "PEPEUSDT",
+      "entry_price": 6.67e-06,
+      "stop_loss": 6.56995e-06,
+      "take_profits": [
+        6.7750525e-06,
+        6.880104999999999e-06,
+        7.020174999999999e-06
+      ],
+      "direction": "LONG",
+      "status": "CLOSED",
+      "current_size": 100,
+      "chat_id": -1002446760333,
+      "created_at": "2025-11-02T02:16:38.771514",
+      "executed_tps": [],
+      "closed_at": "2025-11-03T21:10:53.667875",
+      "close_price": 5.8e-06,
+      "close_reason": "MANUAL_CLOSE"
+    },
+    "PEPEUSDT_1762047154": {
+      "position_id": "PEPEUSDT_1762047154",
+      "symbol": "PEPEUSDT",
+      "entry_price": 6.67e-06,
+      "stop_loss": 6.56995e-06,
+      "take_profits": [
+        6.7750525e-06,
+        6.880104999999999e-06,
+        7.020174999999999e-06
+      ],
+      "direction": "LONG",
+      "status": "CLOSED",
+      "current_size": 100,
+      "chat_id": -1002446760333,
+      "created_at": "2025-11-02T02:32:34.974215",
+      "executed_tps": [],
+      "closed_at": "2025-11-03T21:10:57.251572",
+      "close_price": 5.79e-06,
+      "close_reason": "MANUAL_CLOSE"
+    }
+  },
+  "trade_history": []
+}
