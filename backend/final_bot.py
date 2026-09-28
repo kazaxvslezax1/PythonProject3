@@ -122,140 +122,8 @@ def create_positions_keyboard(positions):
 
 
 def get_consensus_signal(symbol):
-    """🚀 УЛУЧШЕННЫЙ AI КОНСЕНСУС С ФИЛЬТРАМИ КАЧЕСТВА И УСИЛЕННОЙ ДИСЦИПЛИНЫ"""
-    try:
-        # 🔽 🔽 🔽 СНАЧАЛА ПОЛУЧАЕМ РЕАЛЬНЫЕ ДАННЫЕ ОДИН РАЗ 🔽 🔽 🔽
-        volume_data = advanced_volume_analyzer.get_volume_spike_analysis(symbol)
-        trend_data = trend_analyzer.multi_timeframe_analysis(symbol)
-        current_price = risk_manager.get_latest_price(symbol)
-
-        volume_ratio = volume_data.get('volume_ratio', 0) if 'error' not in volume_data else 0
-        confluence = trend_data.get('confluence_score', 0) if 'error' not in trend_data else 0
-
-        # 🔽 РЕАЛЬНЫЙ AI АНАЛИЗ С РЕАЛЬНЫМИ ДАННЫМИ
-        ai_analysis = ai_checker.analyze_signal_quality(symbol, {
-            'volume_ratio': volume_ratio,
-            'current_price': current_price,
-            'confluence': confluence
-        })
-
-        # 🛑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем реальную, немодифицированную уверенность (7.4)
-        initial_ai_confidence = ai_analysis['ai_confidence_score']
-        # ai_confidence - это переменная, которую будут модифицировать жесткие фильтры
-        ai_confidence = initial_ai_confidence
-        ai_recommendation = ai_analysis['recommendation']
-
-        # ➕➕➕ ШАГ 2: КРИТИЧЕСКИЙ ФИЛЬТР ПО ОБЪЕМУ (РАННИЙ ВЫХОД) ➕➕➕
-        # Если объем меньше 50% от среднего, не торгуем (это флэт или манипуляция)
-        if volume_ratio < 0.5:
-            return {
-                'systems_checked': 0,
-                'systems_agreed': 0,
-                'signals': [],
-                'consensus_level': 20,
-                'final_direction': 'HOLD',
-                'confidence': initial_ai_confidence * 10,
-                'ai_confidence_filtered': 2.0,  # <-- ОТФИЛЬТРОВАННОЕ ЗНАЧЕНИЕ (2.0)
-                'ai_confidence_real': initial_ai_confidence,  # <-- РЕАЛЬНОЕ ЗНАЧЕНИЕ (7.4)
-                'ai_recommendation': 'HOLD',
-                'risk_level': 'HIGH_VOLUME_FAIL'
-            }
-        # ➕➕➕ КОНЕЦ ФИЛЬТРА ОБЪЕМА ➕➕➕
-
-        # ➕➕➕ ШАГ 1: ВНЕДРЕНИЕ ЖЕСТКОГО ФИЛЬТРА КАЧЕСТВА ➕➕➕
-        quality_check_failed = False
-        quality_score = quality_filter.check(symbol, ai_recommendation, ai_confidence)
-
-        if quality_score < 7.0:
-            # 1. Снижаем AI-уверенность, чтобы провалить все остальные проверки
-            ai_confidence = 3.0  # <-- Теперь ai_confidence = 3.0 (но real_ai_confidence = 7.4)
-            quality_check_failed = True
-        # ➕➕➕ КОНЕЦ НОВОГО ФИЛЬТРА КАЧЕСТВА ➕➕➕
-
-        consensus_results = {
-            'systems_checked': 0,
-            'systems_agreed': 0,
-            'signals': [],
-            'consensus_level': 0,
-            'final_direction': 'HOLD',
-            # 🛑 ИСПОЛЬЗУЕМ РЕАЛЬНУЮ УВЕРЕННОСТЬ ДЛЯ ОБЩЕЙ КОНФИДЕНЦИИ
-            'confidence': initial_ai_confidence * 10,
-            'ai_confidence_filtered': ai_confidence,  # 2.0 или 3.0, если фильтры сработали
-            'ai_confidence_real': initial_ai_confidence,  # 7.4 - НАШ КЛЮЧ!
-            'ai_recommendation': ai_recommendation,
-            # Определение уровня риска на основе REAL_AI_confidence:
-            'risk_level': 'HIGH' if initial_ai_confidence < 4.0 else 'MEDIUM' if initial_ai_confidence < 7.0 else 'LOW'
-        }
-
-        # 3. Применяем специальный код риска, если фильтр не пройден
-        if quality_check_failed:
-            consensus_results['risk_level'] = 'HIGH_QUALITY_FAIL'
-
-        # 🔽 🔽 🔽 ЕСЛИ AI УВЕРЕННОСТЬ НИЗКАЯ - ВОЗВРАЩАЕМ СРАЗУ
-        if ai_confidence < 4.0:
-            return {
-                'systems_checked': 0,
-                'systems_agreed': 0,
-                'signals': [],
-                'consensus_level': ai_confidence * 10,
-                'final_direction': 'HOLD',
-                'confidence': initial_ai_confidence,
-                'ai_confidence_filtered': ai_confidence,  # 3.0
-                'ai_confidence_real': initial_ai_confidence,  # 7.4
-                'ai_recommendation': ai_recommendation,
-                'risk_level': 'HIGH_QUALITY_FAIL' if quality_check_failed else 'HIGH'
-            }
-
-        # 🔽 🔽 🔽 ТОЛЬКО ПРИ НОРМАЛЬНОЙ AI УВЕРЕННОСТИ - АНАЛИЗИРУЕМ ДРУГИЕ СИСТЕМЫ 🔽 🔽 🔽
-        # ... (Блоки 1, 2, 3 с Объемным и Трендовым Анализом остаются без изменений)
-
-        # 🔽 🔽 🔽 РАСЧЕТ КОНСЕНСУСА НА ОСНОВЕ AI УВЕРЕННОСТИ И ФИЛЬТРА КАЧЕСТВА 🔽 🔽 🔽
-        if consensus_results['systems_checked'] > 0:
-            # 🔽 ОСНОВНОЙ ФАКТОР - AI УВЕРЕННОСТЬ (используем фильтрованную для расчета консенсуса!)
-            base_consensus = (consensus_results['systems_agreed'] / consensus_results['systems_checked']) * 100
-
-            # 🔽 УМНОЖАЕМ НА AI УВЕРЕННОСТЬ
-            adjusted_consensus = base_consensus * (ai_confidence / 10.0)  # ai_confidence здесь 7.4 или 3.0/2.0
-
-            consensus_results['consensus_level'] = adjusted_consensus
-
-            # ➕➕➕ ШАГ 3: УСИЛЕННЫЙ ФИЛЬТР SHORT (ФИНАЛЬНОЕ РЕШЕНИЕ) ➕➕➕
-            if consensus_results['systems_agreed'] >= 2:
-
-                # 🏆 ПРИОРИТЕТ LONG: Требуется REAL_AI_CONFIDENCE >= 7.0 и 2+ согласия
-                if ai_recommendation == "LONG" and initial_ai_confidence >= 7.0:
-                    consensus_results['final_direction'] = "LONG"
-
-                # 🛡️ УСИЛЕННЫЙ ФИЛЬТР SHORT: Требуется REAL_AI_CONFIDENCE >= 6.0 И минимум 3 согласия
-                elif ai_recommendation == "SHORT" and initial_ai_confidence >= 6.0 and consensus_results[
-                    'systems_agreed'] >= 3:
-                    consensus_results['final_direction'] = "SHORT"
-
-                # В противном случае - HOLD
-                else:
-                    consensus_results['final_direction'] = 'HOLD'
-            else:
-                consensus_results['final_direction'] = 'HOLD'
-        else:
-            consensus_results['consensus_level'] = 0
-            consensus_results['final_direction'] = 'HOLD'
-
-        return consensus_results
-
-    except Exception as e:
-        print(f"❌ Ошибка консенсуса для {symbol}: {e}")
-        return {
-            'systems_checked': 0,
-            'systems_agreed': 0,
-            'signals': [],
-            'consensus_level': 0,
-            'final_direction': 'HOLD',
-            'confidence': 0,
-            'ai_confidence_filtered': 2.0,  # <-- ОТФИЛЬТРОВАННОЕ ЗНАЧЕНИЕ
-            'ai_confidence_real': 2.0,  # <-- РЕАЛЬНОЕ ЗНАЧЕНИЕ (ставим 2.0 при фатальной ошибке)
-            'ai_recommendation': '❌ Ошибка анализа',
-            'risk_level': 'HIGH'
-        }
+    from analysis_service import get_consensus
+    return get_consensus(symbol)
 
 def add_trading_plan(symbol):
     """Универсальный план действий для любой сделки"""
@@ -554,7 +422,7 @@ class SimpleMonitor:
             top_alerts = reliable_alerts[:3] if reliable_alerts else []
 
             # Отправляем топ-3 алерта
-            for alert in filtered_alerts[:3]:
+            for alert in top_alerts:
                 self._send_smart_trading_alert(alert)
 
             # Отправляем сводку если алертов много
@@ -1126,7 +994,7 @@ class PremiumSignalsMonitor:
                                     premium_bonus += 1.0  # Бонус за очень tight стопы
 
                                 # 🔥 ИТОГОВАЯ ПРЕМИУМ ОЦЕНКА
-                                premium_score = min(10, premium_calc + premium_bonus)
+                                premium_score = min(10, (premium_calc + premium_bonus) / 5)
 
                                 # Логирование для отладки
                                 print(f"💎 ПРЕМИУМ РАСЧЕТ ДЛЯ {symbol}:")
@@ -5586,7 +5454,7 @@ def premium_signals_command(message):
                                 'volume_ratio': volume_data.get('volume_ratio', 0),
                                 'confluence': confluence,
                                 'ai_analysis': ai_analysis,
-                                'premium_score': min(10, premium_calc)
+                                'premium_score': min(10, premium_calc / 4)
                             })
 
                 time.sleep(0.5)
@@ -5899,7 +5767,7 @@ def live_signals_command(message):
 
                     if response.status_code == 200:
                         data = response.json()
-                        if "error" not in data and data.get('strength', 0) >= 1:  # СНИЗИЛ ДО 1
+                        if "error" not in data and abs(data.get('strength', 0)) >= 2 and data.get('action') in ('BUY', 'SELL'):  # СНИЗИЛ ДО 1
                             signals.append({
                                 'timeframe': tf,
                                 'action': data.get('action'),
@@ -6483,7 +6351,7 @@ def ai_recommendations_command(message):
                         })
 
                         # Берем оценку из детального AI
-                        ai_score = detailed_ai_analysis['ai_confidence_score']
+                        ai_score = detailed_ai_analysis['ai_confidence_score'] * 10
                         ai_recommendation = detailed_ai_analysis['recommendation']
                         ai_color = detailed_ai_analysis['color']
 
@@ -6502,9 +6370,6 @@ def ai_recommendations_command(message):
                         recommendation['ai_recommendation'] = ai_recommendation
                         ai_recommendations.append(recommendation)
 
-                    if ai_score >= 65:  # Только сильные рекомендации
-                        recommendation = generate_ai_recommendation(analysis_data, ai_score)
-                        ai_recommendations.append(recommendation)
 
                 time.sleep(0.5)
 
@@ -8458,38 +8323,14 @@ def set_confidence_command(message):
 
 
 
-def calculate_ai_score(analysis_data):
-    """AI оценка торговой возможности (упрощенная нейросеть)"""
-    score = 0
-
-    # Вес факторов
-    strength_weight = 0.25
-    confluence_weight = 0.20
-    volume_weight = 0.15
-    risk_reward_weight = 0.20
-    quality_weight = 0.20
-
-    # Оценка силы сигнала (0-25)
-    strength = abs(analysis_data['strength'])
-    score += min(25, strength * 2.5) * strength_weight
-
-    # Оценка конфлюэнса (0-20)
-    confluence = analysis_data['confluence']
-    score += min(20, (abs(confluence) * 0.4)) * confluence_weight
-
-    # Оценка объемов (0-15)
-    volume_strength = analysis_data['volume_strength']
-    score += min(15, volume_strength * 3) * volume_weight
-
-    # Оценка риск/прибыль (0-20)
-    risk_reward = analysis_data['risk_reward']
-    score += min(20, risk_reward * 4) * risk_reward_weight
-
-    # Оценка качества (0-20)
-    quality = analysis_data.get('quality_score', 5)
-    score += min(20, quality * 2) * quality_weight
-
-    return min(100, int(score))
+def calculate_ai_score(data):
+    # All components normalized to 0..1, result 0..100.
+    parts = [min(abs(data.get('strength',0))/8,1),
+             min(abs(data.get('confluence',0))/100,1),
+             min(data.get('volume_strength',0)/5,1),
+             min(data.get('risk_reward',0)/4,1),
+             min(data.get('quality_score',0)/10,1)]
+    return round(100*sum(max(0,x)*w for x,w in zip(parts,[.25,.2,.15,.2,.2])))
 
 
 def generate_ai_recommendation(analysis_data, ai_score):
@@ -12365,76 +12206,18 @@ class AutoTradingScanner:
             print(f"❌ Ошибка сканирования рынка: {e}")
 
     def _analyze_symbol(self, symbol):
-        """Анализирует символ и возвращает РЕАЛЬНЫЕ данные для входа"""
+        from analysis_service import analyze_market
         try:
-            # Получаем текущую цену
-            current_price = self.auto_trade_manager._get_current_price(symbol)
-            if not current_price:
+            data = analyze_market(symbol)
+            signal = data['technical_signal']
+            if signal.plan is None:
                 return None
-
-            # 🔽 🔽 🔽 ИСПОЛЬЗУЕМ РЕАЛЬНЫЕ ДАННЫЕ ВМЕСТО СЛУЧАЙНЫХ 🔽 🔽 🔽
-
-            # Получаем РЕАЛЬНЫЙ AI анализ
-            try:
-                ai_data = ai_checker.analyze_signal_quality(symbol, {
-                    'current_price': current_price,
-                    'volume_ratio': 1.0,
-                    'confluence': 50
-                })
-                ai_confidence = ai_data['ai_confidence_score']
-            except Exception as e:
-                print(f"❌ Ошибка AI анализа {symbol}: {e}")
-                ai_confidence = 4.0  # Минимальная уверенность при ошибке
-
-            # Получаем РЕАЛЬНЫЕ данные об объемах
-            try:
-                volume_data = advanced_volume_analyzer.get_volume_spike_analysis(symbol)
-                volume_ratio = volume_data.get('volume_ratio', 1.0)
-            except Exception as e:
-                print(f"❌ Ошибка анализа объемов {symbol}: {e}")
-                volume_ratio = 1.0
-
-            # 🔽 🔽 🔽 ИСПОЛЬЗУЕМ РЕАЛЬНЫЙ КОНСЕНСУС ДЛЯ НАПРАВЛЕНИЯ 🔽 🔽 🔽
-            try:
-                consensus = get_consensus_signal(symbol)
-                direction = consensus['final_direction']
-                # Если консенсус HOLD, пропускаем символ
-                if direction == 'HOLD':
-                    return None
-            except Exception as e:
-                print(f"❌ Ошибка консенсуса {symbol}: {e}")
-                direction = "LONG"  # Запасной вариант
-
-            # Рассчитываем цели на основе РЕАЛЬНОЙ волатильности
-            try:
-                trade_params = calculate_smart_trade_params(symbol, current_price)
-                stop_loss = trade_params['stop_loss']
-                take_profits = trade_params['take_profits']
-                entry_price = current_price
-            except Exception as e:
-                print(f"❌ Ошибка расчета целей {symbol}: {e}")
-                # Запасной расчет
-                if direction == "LONG":
-                    stop_loss = current_price * 0.98
-                    take_profits = [current_price * 1.02, current_price * 1.04, current_price * 1.06]
-                else:
-                    stop_loss = current_price * 1.02
-                    take_profits = [current_price * 0.98, current_price * 0.96, current_price * 0.94]
-
-            return {
-                'symbol': symbol,
-                'current_price': current_price,
-                'ai_confidence': ai_confidence,
-                'volume_ratio': volume_ratio,
-                'direction': direction,
-                'entry_price': entry_price,
-                'stop_loss': stop_loss,
-                'take_profit': take_profits[-1],  # Последний тейк-профит
-                'take_profits': take_profits
-            }
-
-        except Exception as e:
-            print(f"❌ Общая ошибка анализа {symbol}: {e}")
+            plan = signal.plan
+            return {'symbol':symbol, 'current_price':plan.entry, 'entry_price':plan.entry,
+                    'direction':signal.direction.value, 'ai_confidence':signal.quality,
+                    'volume_ratio':data['volume_ratio'], 'stop_loss':plan.stop_loss,
+                    'take_profit':plan.take_profits[-1], 'take_profits':plan.take_profits}
+        except Exception:
             return None
 
     def _is_good_signal(self, analysis):
