@@ -5,23 +5,31 @@ import os
 
 
 def main():
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    from telegram_runtime import SafeTelegramErrors, TelegramLogFilter, allowed_chat_ids, run_polling
+
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         raise SystemExit("Set TELEGRAM_BOT_TOKEN in the run environment")
-    if not os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS"):
-        raise SystemExit("Set TELEGRAM_ALLOWED_CHAT_IDS to your authorized chat IDs")
+    try:
+        allowed = allowed_chat_ids()
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     import telebot
     import telegram_handlers as handlers
     from telegram_ai import register_ai_handlers
 
+    telebot.logger.addFilter(TelegramLogFilter(token))
+    logging.getLogger(__name__).info("Telegram configuration: token present; allowed chats=%s", len(allowed))
     register_ai_handlers(handlers.bot, authorized=handlers.bot.authorized)
     actual = telebot.TeleBot(token)
+    actual.exception_handler = SafeTelegramErrors()
     handlers.bot.configure(actual)
     if not handlers.auto_trade_manager.load_data():
         raise SystemExit("Paper ledger could not be restored; inspect storage before restarting")
     logging.getLogger(__name__).info("Paper-only bot starting; background scanners require explicit commands")
-    actual.infinity_polling(timeout=20, long_polling_timeout=20)
+    if not run_polling(actual):
+        raise SystemExit("Telegram polling failed; see safe diagnostics above")
 
 
 if __name__ == "__main__":
