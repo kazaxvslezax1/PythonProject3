@@ -1,3 +1,4 @@
+import os
 import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -10,7 +11,7 @@ logging.basicConfig(
 )
 
 # Токен бота (ЗАМЕНИ НА СВОЙ ТОКЕН!)
-TELEGRAM_TOKEN = "8238637250:AAE-jXOQgJ9LhlZAd5Rj105ekna6UC_BgFY"
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # URL твоего FastAPI сервера
 API_URL = "http://127.0.0.1:8000"

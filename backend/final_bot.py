@@ -53,7 +53,7 @@ if not check_internet():
     exit(1)
 
 # ТОКЕН БОТА
-TELEGRAM_TOKEN = "8238637250:AAE-jXOQgJ9LhlZAd5Rj105ekna6UC_BgFY"
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 API_URL = "http://127.0.0.1:8000"
 
