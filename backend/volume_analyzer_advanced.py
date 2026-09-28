@@ -1,134 +1,43 @@
-# volume_analyzer_advanced.py
-import requests
-import numpy as np
-from datetime import datetime, timedelta
+from data import get_candles
 
 
 class AdvancedVolumeAnalyzer:
-    def __init__(self):
-        self.volume_threshold = 2.0  # Порог для всплеска объемов
-
-    def get_volume_spike_analysis(self, symbol, timeframe='1h', period=50):
-        """Анализ всплесков объемов"""
+    def get_volume_spike_analysis(self, symbol, timeframe="1h", period=50, as_of=None):
         try:
-            response = requests.get(
-                f"https://api.binance.com/api/v3/klines",
-                params={
-                    'symbol': symbol,
-                    'interval': timeframe,
-                    'limit': period
-                }
+            df = get_candles(symbol, timeframe, max(period, 21), as_of=as_of)
+            mean = float(df.volume.iloc[-21:-1].mean())
+            if mean <= 0:
+                raise ValueError("No volume baseline")
+            ratio = float(df.volume.iloc[-1]) / mean
+            change = (float(df.close.iloc[-1]) / float(df.close.iloc[-2]) - 1) * 100
+            signal = (
+                "PUMP_START"
+                if ratio > 2 and change > 2
+                else "DUMP_START"
+                if ratio > 2 and change < -2
+                else "ACCUMULATION"
+                if ratio > 2
+                else "NO_SPIKE"
             )
+            return {
+                "current_volume": float(df.volume.iloc[-1]),
+                "average_volume": mean,
+                "volume_ratio": ratio,
+                "price_change_percent": change,
+                "is_volume_spike": ratio > 2,
+                "spike_strength": min(ratio / 2, 3),
+                "signal": signal,
+                "confidence": "HEURISTIC",
+                "timestamp": str(df.close_time.iloc[-1]),
+            }
+        except Exception as exc:
+            return {"error": type(exc).__name__}
 
-            if response.status_code == 200:
-                data = response.json()
-                volumes = [float(candle[5]) for candle in data]  # Volume
-                closes = [float(candle[4]) for candle in data]  # Close prices
+    def get_real_time_volume_alert(self, symbol, timeframe="15m"):
+        data = self.get_volume_spike_analysis(symbol, timeframe)
+        if "error" in data or not data["is_volume_spike"]:
+            return None
+        return {**data, "symbol": symbol, "price_change": data["price_change_percent"]}
 
-                # Анализ объемов
-                avg_volume = np.mean(volumes)
-                current_volume = volumes[-1]
-                volume_ratio = current_volume / avg_volume
 
-                # Определяем тип движения
-                price_change = ((closes[-1] - closes[-2]) / closes[-2]) * 100
-
-                analysis = {
-                    'current_volume': current_volume,
-                    'average_volume': avg_volume,
-                    'volume_ratio': round(volume_ratio, 2),
-                    'price_change_percent': round(price_change, 2),
-                    'is_volume_spike': volume_ratio > self.volume_threshold,
-                    'spike_strength': min(volume_ratio / self.volume_threshold, 3.0)  # Макс 3.0
-                }
-
-                # Определяем тип сигнала
-                if analysis['is_volume_spike']:
-                    if price_change > 2:
-                        analysis['signal'] = 'PUMP_START'
-                        analysis['confidence'] = 'HIGH'
-                    elif price_change < -2:
-                        analysis['signal'] = 'DUMP_START'
-                        analysis['confidence'] = 'HIGH'
-                    else:
-                        analysis['signal'] = 'ACCUMULATION'
-                        analysis['confidence'] = 'MEDIUM'
-                else:
-                    analysis['signal'] = 'NO_SPIKE'
-                    analysis['confidence'] = 'LOW'
-
-                return analysis
-
-        except Exception as e:
-            print(f"Ошибка анализа объемов {symbol}: {e}")
-
-        return {'error': 'Не удалось проанализировать объемы'}
-
-    # Добавь в класс AdvancedVolumeAnalyzer
-    def get_real_time_volume_alert(self, symbol, timeframe='15m'):
-        """Проверка для реального времени - быстрая и легкая"""
-        try:
-            response = requests.get(
-                f"https://api.binance.com/api/v3/klines",
-                params={
-                    'symbol': symbol,
-                    'interval': timeframe,
-                    'limit': 20  # Только последние 20 свечей для скорости
-                },
-                timeout=5  # Быстрый таймаут
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                if len(data) < 2:
-                    return None
-
-                # Берем последние 2 свечи для сравнения
-                current_candle = data[-1]
-                previous_candle = data[-2]
-
-                current_volume = float(current_candle[5])
-                previous_volume = float(previous_candle[5])
-                current_close = float(current_candle[4])
-                previous_close = float(previous_candle[4])
-
-                # Быстрый расчет
-                volume_change = (current_volume / previous_volume) if previous_volume > 0 else 1
-                price_change = ((current_close - previous_close) / previous_close) * 100
-
-                # Определяем сигнал
-                if volume_change > 3.0:  # Объем вырос в 3+ раза
-                    if price_change > 2.0:
-                        return {
-                            'symbol': symbol,
-                            'signal': 'PUMP_START',
-                            'volume_ratio': round(volume_change, 1),
-                            'price_change': round(price_change, 2),
-                            'confidence': 'HIGH',
-                            'timestamp': datetime.now()
-                        }
-                    elif price_change < -2.0:
-                        return {
-                            'symbol': symbol,
-                            'signal': 'DUMP_START',
-                            'volume_ratio': round(volume_change, 1),
-                            'price_change': round(price_change, 2),
-                            'confidence': 'HIGH',
-                            'timestamp': datetime.now()
-                        }
-                    else:
-                        return {
-                            'symbol': symbol,
-                            'signal': 'VOLUME_SPIKE',
-                            'volume_ratio': round(volume_change, 1),
-                            'price_change': round(price_change, 2),
-                            'confidence': 'MEDIUM',
-                            'timestamp': datetime.now()
-                        }
-
-        except Exception as e:
-            print(f"Ошибка real-time volume для {symbol}: {e}")
-
-        return None
-# Создаем глобальный экземпляр
 advanced_volume_analyzer = AdvancedVolumeAnalyzer()

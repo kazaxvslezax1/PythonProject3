@@ -1,4 +1,5 @@
 """Causal indicators. Wilder uses SMA seed then alpha=1/period; MACD adjust=False."""
+
 import numpy as np
 import pandas as pd
 
@@ -13,7 +14,7 @@ def wilder(values, period=14):
     seed = start + period - 1
     if seed >= len(values):
         return result
-    result.iloc[seed] = values.iloc[start:seed + 1].mean()
+    result.iloc[seed] = values.iloc[start : seed + 1].mean()
     for i in range(seed + 1, len(values)):
         result.iloc[i] = (result.iloc[i - 1] * (period - 1) + values.iloc[i]) / period
     return result
@@ -41,7 +42,7 @@ def calculate_bollinger_bands(prices, period=20, std_dev=2):
 
 
 def true_range(df):
-    prev = df['close'].shift(1)
+    prev = df["close"].shift(1)
     return pd.concat([df.high - df.low, (df.high - prev).abs(), (df.low - prev).abs()], axis=1).max(axis=1)
 
 
@@ -64,17 +65,17 @@ def calculate_adx(df, period=14):
 def calculate_all_indicators(df):
     df = df.copy()
     prices = df.close.astype(float)
-    df['RSI'] = calculate_rsi(prices)
-    df['MACD'], df['MACD_Signal'], df['MACD_Histogram'] = calculate_macd(prices)
-    df['BB_Upper'], df['BB_Middle'], df['BB_Lower'] = calculate_bollinger_bands(prices)
+    df["RSI"] = calculate_rsi(prices)
+    df["MACD"], df["MACD_Signal"], df["MACD_Histogram"] = calculate_macd(prices)
+    df["BB_Upper"], df["BB_Middle"], df["BB_Lower"] = calculate_bollinger_bands(prices)
     for period in (10, 20, 50, 200):
-        df[f'SMA_{period}'] = prices.rolling(period).mean()
+        df[f"SMA_{period}"] = prices.rolling(period).mean()
     for period in (12, 26):
-        df[f'EMA_{period}'] = prices.ewm(span=period, adjust=False).mean()
-    df['ATR'] = calculate_atr(df)
-    df['SMA_ATR_10'] = df.ATR.rolling(10).mean()
-    df['ADX'] = calculate_adx(df)
-    df['SMA_Volume_10'] = df.volume.shift(1).rolling(10).mean()
-    df['Volume_Ratio'] = df.volume / df.volume.shift(1).rolling(20).mean().replace(0, np.nan)
-    df['Volatility'] = prices.pct_change().rolling(20).std() * 100
+        df[f"EMA_{period}"] = prices.ewm(span=period, adjust=False).mean()
+    df["ATR"] = calculate_atr(df)
+    df["SMA_ATR_10"] = df.ATR.rolling(10).mean()
+    df["ADX"] = calculate_adx(df)
+    df["SMA_Volume_10"] = df.volume.shift(1).rolling(10).mean()
+    df["Volume_Ratio"] = df.volume / df.volume.shift(1).rolling(20).mean().replace(0, np.nan)
+    df["Volatility"] = prices.pct_change().rolling(20).std() * 100
     return df
