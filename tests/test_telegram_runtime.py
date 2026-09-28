@@ -28,7 +28,7 @@ def test_polling_explicitly_subscribes_to_messages(caplog):
     actual.get_webhook_info.return_value.url = ""
     with caplog.at_level(logging.INFO):
         assert run_polling(actual)
-    actual.get_me.assert_called_once_with(timeout=10)
+    actual.get_me.assert_called_once_with()
     actual.get_webhook_info.assert_called_once_with(timeout=10)
     assert actual.infinity_polling.call_args.kwargs["allowed_updates"] == ["message", "callback_query"]
     assert actual.infinity_polling.call_args.kwargs["skip_pending"] is False
@@ -67,7 +67,8 @@ def test_library_log_filter_removes_token_and_traceback():
     assert record.exc_text is None and record.stack_info is None
 
 
-def test_polling_error_handler_preserves_backoff(caplog):
+def test_polling_error_handler_preserves_backoff(caplog, monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "private-token")
     assert SafeTelegramErrors().handle(TimeoutError("private-token")) is False
     assert "TimeoutError" in caplog.text
     assert "private-token" not in caplog.text
@@ -110,6 +111,7 @@ def test_handler_error_logs_safe_code(monkeypatch, caplog):
     from test_telegram_ai import Bot
 
     proxy = BotProxy()
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "private-token")
     error = RuntimeError("private-token")
     error.error_code = 403
 
@@ -143,3 +145,82 @@ def test_main_reaches_polling_without_background_work(monkeypatch):
     final_bot.main()
     run.assert_called_once_with(actual)
     assert isinstance(actual.exception_handler, SafeTelegramErrors)
+
+
+def test_real_telebot_reproduces_bad_keyword_then_reaches_getupdates(monkeypatch):
+    import json
+
+    import telebot
+    from telebot import apihelper
+
+    actual = telebot.TeleBot("123:placeholder", threaded=False)
+    calls = []
+
+    def transport(method, url, **kwargs):
+        name = url.rsplit("/", 1)[-1]
+        calls.append((name, kwargs))
+        if name == "getMe":
+            result = {"id": 123, "is_bot": True, "first_name": "Test", "username": "test_bot"}
+        elif name == "getWebhookInfo":
+            result = {"url": "", "has_custom_certificate": False, "pending_update_count": 0}
+        elif name == "getUpdates":
+            actual.stop_polling()
+            result = []
+        else:
+            raise AssertionError("Unexpected Telegram method")
+        payload = {"ok": True, "result": result}
+        return SimpleNamespace(status_code=200, text=json.dumps(payload), json=lambda: payload)
+
+    monkeypatch.setattr(apihelper, "CUSTOM_REQUEST_SENDER", transport)
+    monkeypatch.setattr(apihelper, "CONNECT_TIMEOUT", 15)
+    monkeypatch.setattr(apihelper, "READ_TIMEOUT", 30)
+    # Reproduce the exact regression against the real installed library, before HTTP.
+    with pytest.raises(TypeError, match="unexpected keyword argument 'timeout'"):
+        actual.get_me(timeout=10)
+    assert calls == []
+    # Exercise real get_me, get_webhook_info AND infinity_polling, only HTTP is fake.
+    assert run_polling(actual)
+    assert [name for name, _ in calls] == ["getMe", "getWebhookInfo", "getMe", "getUpdates"]
+    assert all(kwargs["timeout"] == (10, 10) for name, kwargs in calls if name != "getUpdates")
+    updates = calls[-1][1]
+    assert updates["timeout"] == (20, 25)
+    assert json.loads(updates["params"]["allowed_updates"]) == ["message", "callback_query"]
+
+
+def test_traceback_preserves_frames_and_chain_without_secrets(monkeypatch, caplog):
+    from telegram_runtime import log_telegram_error
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-telegram-value")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-deepseek-value")
+    monkeypatch.setenv("DATABASE_PASSWORD", "test-database-value")
+
+    def inner_failure():
+        raise ValueError("test-telegram-value test-deepseek-value test-database-value password=hidden")
+
+    try:
+        try:
+            inner_failure()
+        except ValueError as cause:
+            raise TypeError("unexpected keyword argument 'timeout'") from cause
+    except TypeError as exc:
+        log_telegram_error("test", exc)
+    assert "Traceback (most recent call last)" in caplog.text
+    assert "inner_failure" in caplog.text and "test_telegram_runtime.py" in caplog.text
+    assert "direct cause" in caplog.text
+    assert "unexpected keyword argument 'timeout'" in caplog.text
+    for value in ("test-telegram-value", "test-deepseek-value", "test-database-value", "password=hidden"):
+        assert value not in caplog.text
+
+
+def test_library_filter_preserves_sanitized_exception_frames():
+    try:
+        raise TypeError("unexpected keyword argument 'timeout'; password=hidden")
+    except TypeError as exc:
+        record = logging.LogRecord(
+            "TeleBot", logging.ERROR, "", 0, "failure", (), (type(exc), exc, exc.__traceback__)
+        )
+    TelegramLogFilter("").filter(record)
+    assert "Traceback (most recent call last)" in record.getMessage()
+    assert "unexpected keyword argument 'timeout'" in record.getMessage()
+    assert "hidden" not in record.getMessage()
+    assert record.exc_info is None
