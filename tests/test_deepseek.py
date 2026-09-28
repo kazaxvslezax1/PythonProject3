@@ -189,3 +189,121 @@ async def test_same_candles_reused_at_later_poll(tmp_path, snapshot):
     a.clock = lambda: later.as_of
     assert (await a.analyze(later)).cached
     assert len(calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "kind,expected",
+    [
+        ("valid", None),
+        ("json", "INVALID_CONTENT_JSON"),
+        ("schema", "AI_SCHEMA_VALIDATION_FAILED"),
+        ("reference", "AI_REFERENCE_VALIDATION_FAILED"),
+        ("empty", "EMPTY_API_CONTENT"),
+        ("envelope", "INVALID_RESPONSE_ENVELOPE"),
+        ("html", "INVALID_ENVELOPE_JSON"),
+        ("provider_error", "API_ERROR_RESPONSE"),
+        ("unauthorized", "API_HTTP_401"),
+        ("bad_request", "API_HTTP_400"),
+    ],
+)
+async def test_response_diagnostics(tmp_path, snapshot, caplog, kind, expected):
+    marker = "private-response-marker"
+    data = valid_result()
+    if kind == "schema":
+        data[marker] = "private-field-value"
+    if kind == "reference":
+        data["risks"][0]["reference"] = marker
+    payload = json.loads(response(data).content)
+    payload["usage"] = None  # Optional provider metadata must not invalidate valid analysis.
+    if kind in ("json", "empty"):
+        payload["choices"][0]["message"]["content"] = marker if kind == "json" else ""
+    if kind == "envelope":
+        payload = {"choices": []}
+    if kind in ("provider_error", "unauthorized", "bad_request"):
+        payload = {"error": {"message": marker, "type": "authentication_error"}}
+    code = 401 if kind == "unauthorized" else 400 if kind == "bad_request" else 200
+    out = httpx.Response(code, json=payload, headers={"x-request-id": "req-regression-123"})
+    if kind == "html":
+        out = httpx.Response(200, text="<html>" + marker, headers={"x-request-id": "req-regression-123"})
+    a = analyzer(tmp_path, snapshot, lambda request: out)
+    result = await a.analyze(snapshot)
+    assert result.reason == expected
+    assert result.status == ("OK" if expected is None else "AI_UNAVAILABLE")
+    if expected:
+        assert result.http_status == code and result.request_id == "req-regression-123"
+        assert expected in caplog.text
+    if kind == "schema":
+        assert result.validation_errors == ["extra_forbidden:<field>"]
+    assert marker not in caplog.text
+    assert "test-placeholder" not in caplog.text
+    assert "Authorization" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_non_ascii_key_reproduces_pre_response_error(tmp_path, snapshot):
+    # Previous catch(ValueError) misclassified this as INVALID_API_RESPONSE before HTTP.
+    with pytest.raises(UnicodeEncodeError):
+        httpx.Request(
+            "POST", "https://api.deepseek.com/chat/completions", headers={"Authorization": "Bearer пример"}
+        )
+    a = analyzer(tmp_path, snapshot, lambda req: pytest.fail("No request expected"))
+    a.key = "пример"
+    assert (await a.analyze(snapshot)).reason == "INVALID_API_KEY_FORMAT"
+    assert a.store.spent(snapshot.as_of.date().isoformat()) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-pro"])
+async def test_supported_model_request_contract(tmp_path, snapshot, model):
+    def transport(request):
+        body = json.loads(request.content)
+        assert body["model"] == model
+        assert body["thinking"] == {"type": "disabled"}
+        assert body["response_format"] == {"type": "json_object"}
+        assert body["stream"] is False
+        assert "json" in body["messages"][0]["content"]
+        return response()
+
+    assert (await analyzer(tmp_path, snapshot, transport, model=model).analyze(snapshot)).status == "OK"
+
+
+@pytest.mark.parametrize("mode", ["ADVISORY", "FILTER"])
+def test_analyze_endpoint_preserves_ai_failure_diagnostics(tmp_path, snapshot, monkeypatch, mode):
+    import asyncio
+    from types import SimpleNamespace
+
+    import ai_runtime
+    import app
+    import pandas as pd
+    from fastapi.testclient import TestClient
+
+    frame = pd.DataFrame([c.model_dump() for c in snapshot.candles])
+    from strategy_engine import legacy_result
+
+    analysis = {
+        **legacy_result(snapshot.technical, frame),
+        "frame": frame,
+        "technical_signal": snapshot.technical,
+        "symbol": snapshot.symbol,
+        "timeframe": snapshot.timeframe,
+        "as_of": snapshot.as_of,
+    }
+    a = analyzer(
+        tmp_path,
+        snapshot,
+        lambda req: httpx.Response(
+            401, json={"error": {"message": "never log this"}}, headers={"x-request-id": "req-api-123"}
+        ),
+    )
+    monkeypatch.setattr(app, "analyze_market", lambda *args: dict(analysis))
+    monkeypatch.setattr(ai_runtime, "_analyzer", a)
+    monkeypatch.setattr(ai_runtime, "_worker", SimpleNamespace(run=asyncio.run))
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("AI_MODE", mode)
+    with TestClient(app.app) as client:
+        out = client.post("/analyze").json()
+    assert out["deepseek"]["reason"] == "API_HTTP_401"
+    assert out["deepseek"]["http_status"] == 401
+    assert out["deepseek"]["request_id"] == "req-api-123"
+    assert out["action"] == ("BUY" if mode == "ADVISORY" else "HOLD")

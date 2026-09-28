@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -15,7 +16,7 @@ from typing import Literal
 import httpx
 from market_data import INTERVALS
 from market_snapshot import MarketSnapshot
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 PROMPT_VERSION = "market-review-v1"
 MODEL_PRICES = {"deepseek-flash": (0.30, 1.20), "deepseek-v4-pro": (1.32, 3.96)}
@@ -89,6 +90,26 @@ class AIResponse(BaseModel):
     provider_model: str | None = None
     cached: bool = False
     retrospective: bool = False
+    http_status: int | None = None
+    request_id: str | None = None
+    error_type: str | None = None
+    validation_errors: list[str] = Field(default_factory=list)
+
+
+class ResponseContractError(ValueError):
+    def __init__(self, reason):
+        self.reason = reason
+        super().__init__(reason)
+
+
+def safe_validation_errors(exc):
+    # Never log Pydantic input, messages, context or arbitrary extra-field names.
+    allowed = set(AIAnalysisResult.model_fields) | set(Scenario.model_fields)
+    errors = []
+    for item in exc.errors(include_input=False, include_context=False, include_url=False)[:20]:
+        path = ".".join(str(x) if isinstance(x, int) or x in allowed else "<field>" for x in item["loc"])
+        errors.append(item["type"] + ":" + (path or "<root>"))
+    return errors
 
 
 class AnalysisStore:
@@ -195,7 +216,7 @@ class DeepSeekAnalyzer:
         self._lock = asyncio.Lock()
         self.last_status = "NOT_CHECKED"
 
-    def unavailable(self, reason, key=None, retrospective=False):
+    def unavailable(self, reason, key=None, retrospective=False, **diagnostics):
         self.last_status = reason
         return AIResponse(
             status="AI_UNAVAILABLE",
@@ -203,7 +224,41 @@ class DeepSeekAnalyzer:
             model=self.model,
             request_hash=key,
             retrospective=retrospective,
+            **diagnostics,
         )
+
+    def safe_request_id(self, response, data=None):
+        value = response.headers.get("x-request-id") or response.headers.get("request-id")
+        if not value and isinstance(data, dict):
+            value = data.get("id")
+        if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", value):
+            return None
+        sensitive = [self.key] + [
+            v for k, v in os.environ.items() if re.search(r"TOKEN|SECRET|PASSWORD|API_KEY", k, re.I)
+        ]
+        if any(secret and secret in value for secret in sensitive) or value.startswith(("sk-", "ghp_")):
+            return None
+        return value
+
+    def failure(
+        self, reason, key, retrospective, phase, http_status=None, request_id=None, exc=None, errors=None
+    ):
+        diagnostics = dict(
+            http_status=http_status,
+            request_id=request_id,
+            error_type=type(exc).__name__ if exc else None,
+            validation_errors=errors or [],
+        )
+        logging.getLogger(__name__).warning(
+            "DeepSeek failure reason=%s phase=%s http_status=%s request_id=%s error_type=%s validation=%s",
+            reason,
+            phase,
+            http_status,
+            request_id,
+            diagnostics["error_type"],
+            diagnostics["validation_errors"],
+        )
+        return self.unavailable(reason, key, retrospective, **diagnostics)
 
     def identity(self, snapshot, retrospective=False):
         canonical = snapshot.model_dump(mode="json")
@@ -249,6 +304,10 @@ class DeepSeekAnalyzer:
                 return self.unavailable("REPLAY_MISS", key, retrospective)
             if not self.key:
                 return self.unavailable("MISSING_API_KEY", key, retrospective)
+            if not self.key.isascii() or any(
+                ch.isspace() or ord(ch) < 33 or ord(ch) == 127 for ch in self.key
+            ):
+                return self.failure("INVALID_API_KEY_FORMAT", key, retrospective, "configuration")
             example = {
                 "direction": "HOLD",
                 "factors_for": [],
@@ -303,11 +362,15 @@ class DeepSeekAnalyzer:
             reservation = ((len(encoded) + 4096) * in_rate + self.max_tokens * out_rate) / 1e6
             started = time.monotonic()
             for attempt in range(self.attempts):
+                phase = "budget"
+                http_status = None
+                request_id = None
                 try:
                     if not self.store.reserve(
                         self.clock().date().isoformat(), reservation, self.daily_budget
                     ):
                         return self.unavailable("BUDGET_EXHAUSTED", key, retrospective)
+                    phase = "request"
                     async with httpx.AsyncClient(
                         timeout=self.timeout, transport=self.transport, follow_redirects=False
                     ) as client:
@@ -317,7 +380,16 @@ class DeepSeekAnalyzer:
                                 json=body,
                                 headers={"Authorization": "Bearer " + self.key},
                             )
-                    # Log only completion content, never headers or provider error bodies.
+                    http_status = response.status_code
+                    request_id = self.safe_request_id(response)
+                    logging.getLogger(__name__).info(
+                        "DeepSeek HTTP status=%s request_id=%s attempt=%s",
+                        http_status,
+                        request_id,
+                        attempt + 1,
+                    )
+                    phase = "audit_storage"
+                    # Persist completion content for replay; never emit it to diagnostic logs.
                     raw_audit = None
                     if response.status_code == 200:
                         try:
@@ -338,21 +410,51 @@ class DeepSeekAnalyzer:
                         if attempt + 1 < self.attempts:
                             await asyncio.sleep(min(0.5 * 2**attempt, 2))
                             continue
-                        return self.unavailable("API_RETRY_EXHAUSTED", key, retrospective)
+                        return self.failure(
+                            "API_RETRY_EXHAUSTED", key, retrospective, "http", http_status, request_id
+                        )
                     if response.status_code != 200:
-                        return self.unavailable("API_HTTP_" + str(response.status_code), key, retrospective)
+                        return self.failure(
+                            "API_HTTP_" + str(response.status_code),
+                            key,
+                            retrospective,
+                            "http",
+                            http_status,
+                            request_id,
+                        )
+                    phase = "response_envelope"
                     data = response.json()
-                    choice = data["choices"][0]
+                    if not isinstance(data, dict):
+                        raise ResponseContractError("INVALID_RESPONSE_ENVELOPE")
+                    request_id = self.safe_request_id(response, data)
+                    if "error" in data:
+                        raise ResponseContractError("API_ERROR_RESPONSE")
+                    choices = data.get("choices")
+                    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+                        raise ResponseContractError("INVALID_RESPONSE_ENVELOPE")
+                    choice = choices[0]
+                    if "finish_reason" not in choice:
+                        raise ResponseContractError("INVALID_RESPONSE_ENVELOPE")
                     if choice["finish_reason"] != "stop":
-                        return self.unavailable("INCOMPLETE_RESPONSE", key, retrospective)
-                    raw = choice["message"]["content"]
+                        raise ResponseContractError("INCOMPLETE_RESPONSE")
+                    message = choice.get("message")
+                    if not isinstance(message, dict) or not isinstance(message.get("content"), str):
+                        raise ResponseContractError("INVALID_RESPONSE_ENVELOPE")
+                    raw = message["content"]
+                    if not raw.strip():
+                        raise ResponseContractError("EMPTY_API_CONTENT")
                     if self.key in raw:
-                        return self.unavailable("INVALID_API_RESPONSE", key, retrospective)
-                    result = AIAnalysisResult.model_validate_json(raw).validate_references(snapshot)
+                        raise ResponseContractError("CREDENTIAL_IN_RESPONSE")
+                    phase = "content_json_schema"
+                    result = AIAnalysisResult.model_validate_json(raw, strict=True)
+                    phase = "references"
+                    result.validate_references(snapshot)
                     if not retrospective and not self.fresh(snapshot):
                         return self.unavailable("STALE_AFTER_ANALYSIS", key)
                     envelope = AIResponse(
                         status="OK",
+                        http_status=http_status,
+                        request_id=request_id,
                         result=result,
                         request_hash=key,
                         model=self.model,
@@ -364,6 +466,7 @@ class DeepSeekAnalyzer:
                         retrospective=retrospective,
                     )
                     # No headers/credentials, provider exceptions or reasoning text in audit.
+                    phase = "save_storage"
                     self.store.save(
                         key,
                         snapshot,
@@ -371,7 +474,9 @@ class DeepSeekAnalyzer:
                         raw,
                         {
                             k: v
-                            for k, v in data.get("usage", {}).items()
+                            for k, v in (
+                                data.get("usage") if isinstance(data.get("usage"), dict) else {}
+                            ).items()
                             if k in ("prompt_tokens", "completion_tokens", "total_tokens")
                             and isinstance(v, int)
                             and v >= 0
@@ -379,7 +484,7 @@ class DeepSeekAnalyzer:
                     )
                     self.last_status = "OK"
                     return envelope
-                except (httpx.TimeoutException, httpx.TransportError, TimeoutError):
+                except (httpx.TimeoutException, httpx.TransportError, TimeoutError) as exc:
                     try:
                         self.store.record_attempt(
                             key, snapshot, self.model, self.clock().isoformat(), "TRANSPORT_ERROR"
@@ -389,11 +494,32 @@ class DeepSeekAnalyzer:
                     if attempt + 1 < self.attempts:
                         await asyncio.sleep(min(0.5 * 2**attempt, 2))
                         continue
-                    return self.unavailable("API_TIMEOUT_OR_TRANSPORT", key, retrospective)
-                except (ValueError, KeyError, IndexError, TypeError):
-                    return self.unavailable("INVALID_API_RESPONSE", key, retrospective)
-                except Exception:
-                    return self.unavailable("STORAGE_OR_INTERNAL_ERROR", key, retrospective)
+                    return self.failure(
+                        "API_TIMEOUT_OR_TRANSPORT", key, retrospective, phase, http_status, request_id, exc
+                    )
+                except ResponseContractError as exc:
+                    return self.failure(exc.reason, key, retrospective, phase, http_status, request_id, exc)
+                except ValidationError as exc:
+                    errors = safe_validation_errors(exc)
+                    reason = (
+                        "INVALID_CONTENT_JSON"
+                        if any(x.startswith("json_invalid:") for x in errors)
+                        else "AI_SCHEMA_VALIDATION_FAILED"
+                    )
+                    return self.failure(
+                        reason, key, retrospective, phase, http_status, request_id, exc, errors
+                    )
+                except (ValueError, KeyError, IndexError, TypeError) as exc:
+                    reason = {
+                        "request": "REQUEST_BUILD_ERROR",
+                        "response_envelope": "INVALID_ENVELOPE_JSON",
+                        "references": "AI_REFERENCE_VALIDATION_FAILED",
+                    }.get(phase, "STORAGE_OR_INTERNAL_ERROR")
+                    return self.failure(reason, key, retrospective, phase, http_status, request_id, exc)
+                except Exception as exc:
+                    return self.failure(
+                        "STORAGE_OR_INTERNAL_ERROR", key, retrospective, phase, http_status, request_id, exc
+                    )
             return self.unavailable("API_UNAVAILABLE", key, retrospective)
 
     def status(self):
