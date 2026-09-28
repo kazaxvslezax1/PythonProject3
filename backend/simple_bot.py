@@ -211,7 +211,7 @@ def analyze_command(message):
         response = requests.post(f"{API_URL}/analyze", params={
             "symbol": symbol,
             "timeframe": timeframe
-        })
+        }, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()
@@ -244,7 +244,7 @@ def analyze_smart_command(message):
 
         bot.reply_to(message, f"🧠 Умный анализ {symbol.upper()}...")
 
-        response = requests.post(f"{API_URL}/analyze-smart", params={"symbol": symbol})
+        response = requests.post(f"{API_URL}/analyze-smart", params={"symbol": symbol}, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()

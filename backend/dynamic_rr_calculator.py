@@ -17,7 +17,7 @@ class DynamicRRCalculator:
     ):
         try:
             targets = targets_for(symbol, requested_direction=direction)
-            if "error" not in targets and targets["risk_reward_ratio"] < min_rr:
+            if "error" not in targets and targets["risk_reward_ratio"] + 1e-9 < min_rr:
                 return {"error": "Minimum R/R not met", "direction": "HOLD"}
             return targets
         except Exception as exc:

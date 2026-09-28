@@ -19,8 +19,12 @@ def format_price(value):
 class AutoTradeManager:
     """Автоматическое управление торговыми позициями"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, rules_loader=None):
         self.bot = bot
+        from exchange_rules import get_exchange_rules
+
+        self.rules_loader = rules_loader or get_exchange_rules
+        self.paper_notional = 1000.0
         self._lock = threading.RLock()
         self.data_path = Path(__file__).resolve().parent.parent / "runtime" / "paper_positions.json"
         self.active_positions = {}  # Храним все активные позиции
@@ -112,6 +116,18 @@ class AutoTradeManager:
             ):
                 return None
 
+            current_price = self._get_current_price(symbol)
+            if not current_price:
+                return None
+            fill = current_price * (1.0005 if direction == "LONG" else 0.9995)
+            rules = self.rules_loader(symbol)
+            plan = rules.plan(
+                TradePlan(direction=direction, entry=fill, stop_loss=stop_loss, take_profits=take_profits)
+            )
+            if plan.rr < 2 or abs(plan.entry - plan.stop_loss) / plan.entry > 0.10:
+                return None
+            quantity = rules.quantity(self.paper_notional, plan.entry)
+            entry_price, stop_loss, take_profits = plan.entry, plan.stop_loss, plan.take_profits
             position_id = f"{symbol}_{uuid.uuid4().hex}"
 
             position_data = {
@@ -123,6 +139,8 @@ class AutoTradeManager:
                 "direction": direction,
                 "status": "ACTIVE",
                 "current_size": 100,
+                "quantity": quantity,
+                "paper_notional": quantity * entry_price,
                 "chat_id": chat_id,
                 "created_at": datetime.now(),
                 "executed_tps": [],
@@ -271,7 +289,8 @@ class AutoTradeManager:
 
                 if tp_triggered:
                     self._execute_take_profit(position, tp_id, tp_price, current_price)
-                    break
+                    if position["status"] != "ACTIVE":
+                        break
 
     def _execute_stop_loss(self, position, current_price, is_manual_close=False):
         if position["status"] != "ACTIVE":
@@ -577,3 +596,56 @@ for _name in (
     "get_trading_statistics",
 ):
     setattr(AutoTradeManager, _name, _synchronized(getattr(AutoTradeManager, _name)))
+
+
+class SmartTakeProfitAdapter:
+    """Legacy smart_tp commands share the same positions and fill ledger."""
+
+    def __init__(self, manager):
+        self._manager = manager
+        self.chat_id = None
+
+    @property
+    def monitoring_active(self):
+        return self._manager().monitoring_active
+
+    @property
+    def active_positions(self):
+        return {
+            key: {**value, "current_stop_loss": value["stop_loss"]}
+            for key, value in self._manager().get_active_positions(self.chat_id).items()
+        }
+
+    def start_takeprofit_monitoring(self, chat_id):
+        self.chat_id = chat_id
+        self._manager().start_monitoring()
+        return "PAPER monitoring started; shared position ledger"
+
+    def stop_takeprofit_monitoring(self):
+        self._manager().stop_monitoring()
+        return "PAPER monitoring stopped"
+
+    def add_position(self, symbol, entry_price, stop_loss, take_profits, direction, position_size=100):
+        from ai_runtime import review_analysis
+        from analysis_service import analyze_market
+        from signal_models import direction as normalize_direction
+
+        if self.chat_id is None:
+            return None
+        data = analyze_market(symbol)
+        signal = data["technical_signal"]
+        review = review_analysis(data)
+        if review is not None:
+            signal = review.final
+        if signal.direction != normalize_direction(direction) or signal.plan is None:
+            return None
+        return self._manager().create_auto_trade(
+            self.chat_id,
+            symbol,
+            entry_price,
+            stop_loss,
+            take_profits,
+            signal.direction.value,
+            signal.quality,
+            data["volume_ratio"],
+        )

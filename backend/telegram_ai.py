@@ -120,7 +120,9 @@ def register_ai_handlers(
         try:
             snapshot = snapshot_loader(parts[1].upper(), parts[2] if len(parts) > 2 else "1h")
             selected = AIMode.ADVISORY if parts[0].split("@")[0] == "/deepseek" else mode
-            decision = run(hybrid_signal(snapshot, get_analyzer(), selected))
+            decision = run(
+                hybrid_signal(snapshot, get_analyzer() if selected != AIMode.OFF else None, selected)
+            )
             send(message, format_decision(snapshot, decision))
         except Exception as exc:
             send(message, "AI_UNAVAILABLE: " + type(exc).__name__ + "; торговое действие не создано")

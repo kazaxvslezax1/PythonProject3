@@ -44,7 +44,7 @@ class FibonacciCalculator:
                     'interval': '1d',
                     'limit': period
                 }
-            )
+            , timeout=(5, 20))
 
             if response.status_code == 200:
                 data = response.json()

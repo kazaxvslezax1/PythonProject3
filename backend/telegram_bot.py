@@ -57,7 +57,7 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = requests.post(f"{API_URL}/analyze", params={
             "symbol": symbol,
             "timeframe": timeframe
-        })
+        }, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()
@@ -88,7 +88,7 @@ async def analyze_smart_command(update: Update, context: ContextTypes.DEFAULT_TY
         # Делаем запрос к нашему API
         response = requests.post(f"{API_URL}/analyze-smart", params={
             "symbol": symbol
-        })
+        }, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()

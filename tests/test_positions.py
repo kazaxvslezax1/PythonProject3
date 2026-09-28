@@ -8,7 +8,7 @@ class Bot:
 
 
 def test_position_partial_statistics_and_save(tmp_path, monkeypatch):
-    m = AutoTradeManager(Bot())
+    m = AutoTradeManager(Bot(), rules_loader=lambda s: paper_rules())
     m.data_path = tmp_path / "positions.json"
     monkeypatch.setattr(m, "start_monitoring", lambda: None)
     monkeypatch.setattr(m, "_get_current_price", lambda s: 100)
@@ -30,9 +30,17 @@ def test_position_partial_statistics_and_save(tmp_path, monkeypatch):
 
 
 def test_closed_positions_do_not_exhaust_limit():
-    m = AutoTradeManager(Bot())
+    m = AutoTradeManager(Bot(), rules_loader=lambda s: paper_rules())
     m.active_positions = {
         str(i): {"position_id": str(i), "chat_id": 1, "status": "CLOSED"} for i in range(10)
     }
     m.last_trade_time = None
     assert m.should_open_trade(1, "BTCUSDT", 8, 2)[0]
+
+
+def paper_rules():
+    from decimal import Decimal
+
+    from exchange_rules import ExchangeRules
+
+    return ExchangeRules(*map(Decimal, ["0.01", "0.001", "0.001", "100000", "5"]))

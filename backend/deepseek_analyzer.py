@@ -6,6 +6,8 @@ import json
 import os
 import re
 import sqlite3
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -83,6 +85,8 @@ class AIResponse(BaseModel):
     model: str
     prompt_version: str = PROMPT_VERSION
     analyzed_at: str | None = None
+    duration_ms: float | None = None
+    provider_model: str | None = None
     cached: bool = False
     retrospective: bool = False
 
@@ -105,8 +109,14 @@ class AnalysisStore:
                   timestamp TEXT, status TEXT, raw_content TEXT);
             """)
 
+    @contextmanager
     def connect(self):
-        return sqlite3.connect(self.path, timeout=5)
+        connection = sqlite3.connect(self.path, timeout=5)
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     def reserve(self, day, amount, limit):
         with self.connect() as db:
@@ -291,6 +301,7 @@ class DeepSeekAnalyzer:
             # Never refund on errors/timeouts, since inference may have been billed.
             in_rate, out_rate = MODEL_PRICES[self.model]
             reservation = ((len(encoded) + 4096) * in_rate + self.max_tokens * out_rate) / 1e6
+            started = time.monotonic()
             for attempt in range(self.attempts):
                 try:
                     if not self.store.reserve(
@@ -346,10 +357,26 @@ class DeepSeekAnalyzer:
                         request_hash=key,
                         model=self.model,
                         analyzed_at=self.clock().isoformat(),
+                        duration_ms=(time.monotonic() - started) * 1000,
+                        provider_model=str(data.get("model", self.model))[:128].replace(
+                            self.key, "[REDACTED]"
+                        ),
                         retrospective=retrospective,
                     )
                     # No headers/credentials, provider exceptions or reasoning text in audit.
-                    self.store.save(key, snapshot, envelope, raw, data.get("usage", {}))
+                    self.store.save(
+                        key,
+                        snapshot,
+                        envelope,
+                        raw,
+                        {
+                            k: v
+                            for k, v in data.get("usage", {}).items()
+                            if k in ("prompt_tokens", "completion_tokens", "total_tokens")
+                            and isinstance(v, int)
+                            and v >= 0
+                        },
+                    )
                     self.last_status = "OK"
                     return envelope
                 except (httpx.TimeoutException, httpx.TransportError, TimeoutError):
