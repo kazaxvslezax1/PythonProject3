@@ -307,3 +307,45 @@ def test_analyze_endpoint_preserves_ai_failure_diagnostics(tmp_path, snapshot, m
     assert out["deepseek"]["http_status"] == 401
     assert out["deepseek"]["request_id"] == "req-api-123"
     assert out["action"] == ("BUY" if mode == "ADVISORY" else "HOLD")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("explanation", ["RSI выше 70", "Цена ниже SMA20", "Таймфрейм 1h", "Уровень ٧٠"])
+async def test_factors_against_explanation_rejects_digits(tmp_path, snapshot, caplog, explanation):
+    data = valid_result()
+    data["factors_against"] = [{"reference": "RSI", "explanation": explanation}]
+    result = await analyzer(tmp_path, snapshot, lambda req: response(data)).analyze(snapshot)
+    assert result.status == "AI_UNAVAILABLE"
+    assert result.reason == "AI_SCHEMA_VALIDATION_FAILED"
+    assert result.http_status == 200
+    assert result.validation_errors == ["digits_in_explanation:factors_against.0.explanation"]
+    assert "digits_in_explanation:factors_against.0.explanation" in caplog.text
+    assert explanation not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_qualitative_explanation_matches_schema_and_prompt(tmp_path, snapshot):
+    from deepseek_analyzer import PROMPT_VERSION
+
+    text = "Импульс не подтверждает направление технического сигнала"
+    data = valid_result()
+    data["factors_against"] = [{"reference": "RSI", "explanation": text}]
+
+    def transport(request):
+        body = json.loads(request.content)
+        prompt = body["messages"][0]["content"]
+        assert "factors_against[].explanation" in prompt
+        assert "indicator names" in prompt
+        assert "never spell out numerical market claims" in prompt
+        return response(data)
+
+    result = await analyzer(tmp_path, snapshot, transport).analyze(snapshot)
+    assert result.status == "OK"
+    assert result.result.factors_against[0].explanation == text
+    assert result.prompt_version == PROMPT_VERSION == "market-review-v2"
+    schema = AIAnalysisResult.model_json_schema()
+    for definition in ("Evidence", "Scenario"):
+        field = schema["$defs"][definition]["properties"]["explanation"]
+        assert field["pattern"] == r"^\D*$"
+        assert field["minLength"] == 1 and field["maxLength"] == 350
+    assert schema["properties"]["conclusion"]["pattern"] == r"^[^\d%]*$"
