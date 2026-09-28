@@ -14,12 +14,13 @@ from pathlib import Path
 from typing import Literal
 
 import httpx
+from ai_facts import FactClaim, check_facts, fact_catalog
 from market_data import INTERVALS
 from market_snapshot import MarketSnapshot
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 
-PROMPT_VERSION = "market-review-v2"
+PROMPT_VERSION = "market-review-v3"
 MODEL_PRICES = {"deepseek-flash": (0.30, 1.20), "deepseek-v4-pro": (1.32, 3.96)}
 # Peak/cache-miss USD per million tokens. Verified 2026-09-28; configurable budget,
 # fixed conservative reservations; actual billing remains provider-controlled.
@@ -54,6 +55,7 @@ class Scenario(Evidence):
 class AIAnalysisResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
     direction: Literal["LONG", "SHORT", "HOLD"]
+    facts: list[FactClaim] = Field(min_length=1, max_length=30)
     factors_for: list[Evidence] = Field(max_length=8)
     factors_against: list[Evidence] = Field(max_length=8)
     risks: list[Evidence] = Field(min_length=1, max_length=8)
@@ -111,6 +113,8 @@ class AIResponse(BaseModel):
     request_id: str | None = None
     error_type: str | None = None
     validation_errors: list[str] = Field(default_factory=list)
+    interpretation_status: Literal["UNVERIFIED"] = "UNVERIFIED"
+    fact_check_status: Literal["PASSED", "FAILED", "NOT_CHECKED"] = "NOT_CHECKED"
 
 
 class ResponseContractError(ValueError):
@@ -121,7 +125,7 @@ class ResponseContractError(ValueError):
 
 def safe_validation_errors(exc):
     # Never log Pydantic input, messages, context or arbitrary extra-field names.
-    allowed = set(AIAnalysisResult.model_fields) | set(Scenario.model_fields)
+    allowed = set(AIAnalysisResult.model_fields) | set(Scenario.model_fields) | set(FactClaim.model_fields)
     errors = []
     for item in exc.errors(include_input=False, include_context=False, include_url=False)[:20]:
         path = ".".join(str(x) if isinstance(x, int) or x in allowed else "<field>" for x in item["loc"])
@@ -275,7 +279,13 @@ class DeepSeekAnalyzer:
             diagnostics["error_type"],
             diagnostics["validation_errors"],
         )
-        return self.unavailable(reason, key, retrospective, **diagnostics)
+        return self.unavailable(
+            reason,
+            key,
+            retrospective,
+            fact_check_status="FAILED" if reason == "AI_FACT_CHECK_FAILED" else "NOT_CHECKED",
+            **diagnostics,
+        )
 
     def identity(self, snapshot, retrospective=False):
         canonical = snapshot.model_dump(mode="json")
@@ -312,6 +322,8 @@ class DeepSeekAnalyzer:
             if saved:
                 try:
                     saved.result.validate_references(snapshot)
+                    if check_facts(saved.result.facts, snapshot):
+                        return self.failure("AI_FACT_CHECK_FAILED", key, retrospective, "cached_facts")
                     saved.cached = True
                     self.last_status = "CACHED"
                     return saved
@@ -327,6 +339,7 @@ class DeepSeekAnalyzer:
                 return self.failure("INVALID_API_KEY_FORMAT", key, retrospective, "configuration")
             example = {
                 "direction": "HOLD",
+                "facts": [{"fact_id": "close_vs_SMA_20", "relation": "above"}],
                 "factors_for": [],
                 "factors_against": [{"reference": "RSI", "explanation": "Подтверждение недостаточно"}],
                 "risks": [{"reference": "ATR", "explanation": "Риск волатильности"}],
@@ -352,21 +365,29 @@ class DeepSeekAnalyzer:
                 "Return json in Russian matching the schema. All explanation fields, including "
                 "factors_against[].explanation, must contain no digits of any alphabet. "
                 "This also excludes digits inside indicator names, timeframes, levels and list numbering. "
-                "Put exact supplied keys such as SMA20 or tp1 only in reference, never in explanation. "
-                "For example use reference=SMA20 with explanation=Цена ниже скользящей средней; "
+                "Put exact supplied keys such as SMA_20 or tp1 only in reference, never in explanation. "
+                "For example use reference=SMA_20 with explanation=Подтверждение требует осторожной оценки; "
                 "do not write Цена ниже SMA20 or RSI выше 70. Use a reference only if it exists in references. "
                 "Keep explanations qualitative; never spell out numerical market claims to evade this rule. "
                 "Conclusion must contain neither digits nor percent signs. "
                 "Explanation length is one to three hundred fifty characters; conclusion at most five hundred. "
                 "Before returning, check every explanation and conclusion against these constraints. "
                 "Do not change trade levels. Evaluate contradictions and alternative scenarios. "
-                "Missing confirmation means HOLD. Example: "
+                "All current numeric assertions must be in facts, one entry for EVERY supplied fact_catalog ID, "
+                "with relation above/below/equal from exact supplied values. Do not invent IDs or thresholds. "
+                "The example facts list illustrates syntax only, not actual relations or complete coverage. "
+                "Free text is interpretation only, not current numeric assertions. Scenario relations describe "
+                "hypothetical future conditions and are not current facts. Missing confirmation means HOLD. Example: "
                 + json.dumps(example, ensure_ascii=False)
                 + "\nSchema: "
                 + json.dumps(AIAnalysisResult.model_json_schema())
             )
             user = json.dumps(
-                {"snapshot": snapshot.model_dump(mode="json"), "references": snapshot.references()},
+                {
+                    "snapshot": snapshot.model_dump(mode="json"),
+                    "references": snapshot.references(),
+                    "fact_catalog": fact_catalog(snapshot),
+                },
                 ensure_ascii=False,
             )
             body = {
@@ -474,10 +495,23 @@ class DeepSeekAnalyzer:
                     result = AIAnalysisResult.model_validate_json(raw, strict=True)
                     phase = "references"
                     result.validate_references(snapshot)
+                    phase = "facts"
+                    fact_errors = check_facts(result.facts, snapshot)
+                    if fact_errors:
+                        return self.failure(
+                            "AI_FACT_CHECK_FAILED",
+                            key,
+                            retrospective,
+                            phase,
+                            http_status,
+                            request_id,
+                            errors=fact_errors,
+                        )
                     if not retrospective and not self.fresh(snapshot):
                         return self.unavailable("STALE_AFTER_ANALYSIS", key)
                     envelope = AIResponse(
                         status="OK",
+                        fact_check_status="PASSED",
                         http_status=http_status,
                         request_id=request_id,
                         result=result,

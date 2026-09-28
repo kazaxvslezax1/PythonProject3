@@ -25,7 +25,7 @@ def format_technical(data):
     if ai:
         lines.append("DeepSeek: " + ai["status"])
         if ai.get("result"):
-            lines.append(ai["result"]["conclusion"])
+            lines.append("AI interpretation: unverified; free text omitted")
         elif ai.get("reason"):
             lines.append(ai["reason"])
     lines.append("Режим PAPER; реальные ордера отключены.")

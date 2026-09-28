@@ -11,6 +11,7 @@ def valid_result(direction="LONG"):
     evidence = {"reference": "RSI", "explanation": "Подтверждение импульса"}
     return dict(
         direction=direction,
+        facts=[],
         factors_for=[evidence],
         factors_against=[],
         risks=[evidence],
@@ -41,12 +42,30 @@ def response(data=None, status=200):
     )
 
 
+def attach_facts(out, request):
+    from ai_facts import relation
+
+    try:
+        envelope = json.loads(out.content)
+        result = json.loads(envelope["choices"][0]["message"]["content"])
+        if result.get("facts") == []:
+            inputs = json.loads(json.loads(request.content)["messages"][1]["content"])
+            result["facts"] = [
+                {"fact_id": key, "relation": relation(fact)} for key, fact in inputs["fact_catalog"].items()
+            ]
+            envelope["choices"][0]["message"]["content"] = json.dumps(result)
+            return httpx.Response(out.status_code, json=envelope, headers=out.headers)
+    except (KeyError, ValueError, IndexError, TypeError):
+        pass
+    return out
+
+
 def analyzer(tmp_path, snapshot, handler, **kwargs):
     return DeepSeekAnalyzer(
         store=AnalysisStore(tmp_path / "ai.db"),
         api_key="test-placeholder",
         clock=lambda: snapshot.as_of,
-        transport=httpx.MockTransport(handler),
+        transport=httpx.MockTransport(lambda req: attach_facts(handler(req), req)),
         **kwargs,
     )
 
@@ -342,7 +361,7 @@ async def test_qualitative_explanation_matches_schema_and_prompt(tmp_path, snaps
     result = await analyzer(tmp_path, snapshot, transport).analyze(snapshot)
     assert result.status == "OK"
     assert result.result.factors_against[0].explanation == text
-    assert result.prompt_version == PROMPT_VERSION == "market-review-v2"
+    assert result.prompt_version == PROMPT_VERSION == "market-review-v3"
     schema = AIAnalysisResult.model_json_schema()
     for definition in ("Evidence", "Scenario"):
         field = schema["$defs"][definition]["properties"]["explanation"]

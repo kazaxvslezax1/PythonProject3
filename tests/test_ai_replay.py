@@ -4,7 +4,7 @@ import httpx
 import pytest
 from ai_backtest import compare_ai
 from deepseek_analyzer import AnalysisStore, DeepSeekAnalyzer
-from test_deepseek import response, valid_result
+from test_deepseek import attach_facts, response, valid_result
 
 
 @pytest.mark.asyncio
@@ -15,7 +15,7 @@ async def test_saved_replay_is_identical_and_holdout_is_separate(tmp_path, candl
     def handler(req):
         calls.append(1)
         # Deliberately reject all signals: not a model efficacy claim.
-        return response(valid_result("HOLD"))
+        return attach_facts(response(valid_result("HOLD")), req)
 
     a = DeepSeekAnalyzer(
         store=AnalysisStore(tmp_path / "replay.db"),
