@@ -195,7 +195,8 @@ def test_late_ai_cannot_retroactively_make_entry_comparable(tmp_path, snapshot):
     journal.record_ai(signal_id, verified(snapshot, snapshot.technical.direction.value))
     report = journal.report()
     assert report["ai_ok"] == 1
-    assert report["paired_ai_observations"] == 0
+    assert report["paired_ai_observations"] == 1
+    assert report["entry_aligned_ai_decisions"] == 0
     assert report["control_decisions"]["ai_unknown"] == 1
 
 
@@ -221,7 +222,8 @@ def test_ai_recovers_before_entry_without_rewriting_first_failure(tmp_path, snap
     )
     result = journal.report()
     assert result["ai_unavailable"] == result["ai_retry_ok"] == 1
-    assert result["paired_ai_observations"] == 1
+    assert result["paired_ai_observations"] == 0
+    assert result["entry_aligned_ai_decisions"] == 1
     assert result["control_decisions"]["ai_allow"] == 1
 
 

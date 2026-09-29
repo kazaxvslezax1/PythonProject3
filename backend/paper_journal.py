@@ -52,9 +52,17 @@ def cost_settings():
     return {"fee_rate": fee, "slippage_rate": slip, "capital_usd": capital}
 
 
+def journal_path(path=None):
+    """Resolve relative overrides from the project root, independent of process CWD."""
+    selected = Path(path or os.environ.get("PAPER_JOURNAL_PATH") or DEFAULT_PATH).expanduser()
+    if not selected.is_absolute():
+        selected = DEFAULT_PATH.parents[1] / selected
+    return selected.resolve()
+
+
 class PaperJournal:
     def __init__(self, path=None):
-        self.path = Path(path or os.environ.get("PAPER_JOURNAL_PATH") or DEFAULT_PATH)
+        self.path = journal_path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.costs = cost_settings()
         self.config_version = uid(
@@ -155,13 +163,12 @@ class PaperJournal:
             min_bars=60,
             require_fresh=False,
         )
-        if frame.empty or frame.close_time.iloc[-1].to_pydatetime() != signal.timestamp:
+        candle_close = as_utc(signal.timestamp)
+        if frame.empty or as_utc(frame.close_time.iloc[-1].to_pydatetime()) != candle_close:
             raise ValueError("Signal and last closed candle differ")
         if signal.timestamp >= datetime.now(timezone.utc):
             raise ValueError("Cannot journal an unclosed or future candle")
-        signal_id = uid(
-            signal.strategy_version, signal.symbol, signal.timeframe, signal.timestamp.isoformat()
-        )
+        signal_id = uid(signal.strategy_version, signal.symbol, signal.timeframe, candle_close)
         market = {
             "candles": [
                 {
@@ -196,33 +203,55 @@ class PaperJournal:
         mode = os.environ.get("AI_MODE", "ADVISORY").upper()
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            db.execute(
-                "INSERT OR IGNORE INTO observations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    signal_id,
-                    signal.strategy_version,
-                    self.config_version,
-                    signal.symbol,
-                    signal.timeframe,
-                    signal.timestamp.isoformat(),
-                    first_seen,
-                    signal.direction.value,
-                    signal.quality,
-                    signal.model_dump_json(),
-                    compact(market),
-                    mode,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    signal.direction.value,
-                    "HOLD" if signal.plan is None else "UNREVIEWED",
-                    None,
-                ),
-            )
+            existing = db.execute(
+                "SELECT id, candle_close, signal_json, market_json FROM observations WHERE id=?",
+                (signal_id,),
+            ).fetchone()
+            if existing is None:
+                # Reuse an older v1 row written with an equivalent non-UTC offset.
+                for row in db.execute(
+                    "SELECT id, candle_close, signal_json, market_json FROM observations "
+                    "WHERE strategy_version=? AND symbol=? AND timeframe=? ORDER BY first_seen",
+                    (signal.strategy_version, signal.symbol, signal.timeframe),
+                ):
+                    if as_utc(row["candle_close"]) == candle_close:
+                        signal_id, existing = row["id"], row
+                        break
+            if existing is not None:
+                frozen = json.loads(existing["signal_json"])
+                current = signal.model_dump(mode="json")
+                frozen.pop("timestamp")
+                current.pop("timestamp")
+                if frozen != current or json.loads(existing["market_json"]) != market:
+                    raise ValueError("Conflicting analysis for an already observed candle")
+            else:
+                db.execute(
+                    "INSERT INTO observations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        signal_id,
+                        signal.strategy_version,
+                        self.config_version,
+                        signal.symbol,
+                        signal.timeframe,
+                        candle_close,
+                        first_seen,
+                        signal.direction.value,
+                        signal.quality,
+                        signal.model_dump_json(),
+                        compact(market),
+                        mode,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        signal.direction.value,
+                        "HOLD" if signal.plan is None else "UNREVIEWED",
+                        None,
+                    ),
+                )
             self.event(
                 db,
                 uid(signal_id, "SIGNAL"),
@@ -252,15 +281,17 @@ class PaperJournal:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
-                "SELECT ai_status, symbol, timeframe, candle_close FROM observations WHERE id=?",
+                "SELECT ai_status, symbol, timeframe, candle_close, technical_direction "
+                "FROM observations WHERE id=?",
                 (signal_id,),
             ).fetchone()
             if row is None:
                 raise ValueError("AI review has no journaled signal")
-            if (row["symbol"], row["timeframe"], row["candle_close"]) != (
+            if (row["symbol"], row["timeframe"], as_utc(row["candle_close"]), row["technical_direction"]) != (
                 technical.symbol,
                 technical.timeframe,
-                technical.timestamp.isoformat(),
+                as_utc(technical.timestamp),
+                technical.direction.value,
             ):
                 raise ValueError("AI review identity mismatch")
             if row["ai_status"] is not None:
@@ -640,12 +671,8 @@ class PaperJournal:
 
     def report(self):
         with self.connect() as db:
-            observations = db.execute(
-                "SELECT * FROM observations WHERE first_seen>=? ORDER BY first_seen", (self.started_at,)
-            ).fetchall()
-            attempts = db.execute(
-                "SELECT * FROM entry_attempts WHERE attempted_at>=?", (self.started_at,)
-            ).fetchall()
+            observations = db.execute("SELECT * FROM observations ORDER BY first_seen").fetchall()
+            attempts = db.execute("SELECT * FROM entry_attempts").fetchall()
             positions = db.execute(
                 "SELECT * FROM paper_positions WHERE source='PROSPECTIVE' ORDER BY closed_at, opened_at"
             ).fetchall()
@@ -768,7 +795,11 @@ class PaperJournal:
                 for reason in sorted({r["ai_reason"] for r in observations if r["ai_reason"]})
             },
             "ai_not_reviewed": sum(r["ai_status"] is None for r in observations),
-            "paired_ai_observations": sum(r["id"] in paired for r in observations),
+            "ai_observations": sum(r["ai_status"] is not None for r in observations),
+            "paired_ai_observations": sum(
+                r["ai_status"] == "OK" and r["fact_check"] == "PASSED" for r in observations
+            ),
+            "entry_aligned_ai_decisions": sum(r["id"] in paired for r in observations),
             "shadow_allow": sum(r["shadow_decision"] == "ALLOW" for r in observations),
             "shadow_veto": sum(r["shadow_decision"] == "VETO" for r in observations),
             "control_decisions": controls,

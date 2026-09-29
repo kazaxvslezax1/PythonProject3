@@ -27,6 +27,16 @@ class APIStatus(BaseModel):
     connectivity: Literal["NOT_PROBED_STATUS_ONLY"]
 
 
+class PaperJournalStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    source: Literal["API_SERVER"]
+    path: str
+    exists: bool
+    signals: int
+    ai_ok: int
+    paired_ai_observations: int
+
+
 class AsyncWorker:
     def __init__(self):
         self.loop = asyncio.new_event_loop()
@@ -199,25 +209,52 @@ def register_ai_handlers(
     def paper_command(message):
         if not authorized(message):
             return
-        from paper_journal import PaperJournal
+        from paper_journal import PaperJournal, journal_path
 
         try:
+            local_path = journal_path()
+            local_existed = local_path.is_file()
             r = PaperJournal().report()
             lines = [
                 f"PAPER-журнал: {r['period_start']} — {r['period_end']}",
-                f"Сигналы {r['signals']}; HOLD {r['hold']}; отклонённые входы {r['rejected_entries']}",
+                f"Telegram SQLite: {local_path}; существует={local_existed or local_path.is_file()}",
+                f"Сигналы/наблюдения {r['signals']} (LONG {r['signal_directions']['LONG']}, "
+                f"SHORT {r['signal_directions']['SHORT']}, HOLD {r['hold']}); "
+                f"отклонённые входы {r['rejected_entries']}",
                 f"Фактические PAPER-позиции {r['paper_positions']}; закрыты {r['closed_positions']}",
                 f"Net PnL закрытых: {r['net_pnl_usd_closed']:.2f} USD; "
                 f"реализованная просадка {r['realized_max_drawdown_pct']:.2f}%",
                 f"DeepSeek: первый ответ OK {r['ai_ok']}; недоступен {r['ai_unavailable']}; "
                 f"успешные повторы {r['ai_retry_ok']}; "
-                f"без проверки {r['ai_not_reviewed']}; парных наблюдений {r['paired_ai_observations']}",
+                f"без проверки {r['ai_not_reviewed']}; ответов AI {r['ai_observations']}; "
+                f"проверенных пар сигнал/AI {r['paired_ai_observations']}",
             ]
+            if not local_existed:
+                lines.append("Telegram SQLite создан при первом чтении отчёта; прежних записей в нём нет.")
+            try:
+                response = remote.get("http://127.0.0.1:8000/paper/journal/status", timeout=(3, 5))
+                response.raise_for_status()
+                api = PaperJournalStatus.model_validate(response.json())
+                lines.append(
+                    f"API SQLite: {api.path}; существует={api.exists}; "
+                    f"сигналы={api.signals}; AI OK={api.ai_ok}; пары={api.paired_ai_observations}"
+                )
+                if api.path != str(local_path):
+                    lines.append("ВНИМАНИЕ: API и Telegram читают разные PAPER-журналы.")
+                elif (api.signals, api.ai_ok, api.paired_ai_observations) != (
+                    r["signals"],
+                    r["ai_ok"],
+                    r["paired_ai_observations"],
+                ):
+                    lines.append("ВНИМАНИЕ: счётчики API и Telegram различаются; повторите отчёт.")
+            except Exception:
+                lines.append("API SQLite: диагностика недоступна; путь и счётчики сервера неизвестны.")
             if message.text.split()[0].split("@")[0] == "/paper_report":
                 lines.append("Пары/TF (закрытые сделки, net USD):")
                 for pair, item in sorted(r["by_pair_timeframe"].items()):
                     lines.append(f"{pair}: {item['closed']}, {item['net_pnl_usd']:.2f}")
                 c = r["control_decisions"]
+                lines.append(f"Решения AI к моменту попытки входа: {r['entry_aligned_ai_decisions']}.")
                 lines.append(
                     f"Контроль A/B: технически допущено {c['technical_allow']}; "
                     f"AI подтвердил {c['ai_allow']}, отклонил {c['ai_veto']}, "

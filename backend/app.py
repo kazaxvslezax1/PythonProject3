@@ -1,8 +1,11 @@
+import logging
+
 from analysis_service import analyze_market
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from strategy import find_best_timeframe
 
 app = FastAPI(title="Trading analysis (paper only)")
+logger = logging.getLogger(__name__)
 
 
 @app.get("/")
@@ -48,6 +51,28 @@ def ai_status():
     return api_status()
 
 
+@app.get("/paper/journal/status")
+def paper_journal_status(request: Request):
+    """Local, read-only journal identity for comparing the API and Telegram processes."""
+    from paper_journal import PaperJournal, journal_path
+
+    if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
+        raise HTTPException(status_code=403, detail="Local journal diagnostics only")
+    path = journal_path()
+    exists = path.is_file()
+    logger.info("PAPER journal API path=%s exists=%s", path, exists)
+    report = PaperJournal().report() if exists else None
+    logger.info("PAPER journal API signals=%d", report["signals"] if report else 0)
+    return {
+        "source": "API_SERVER",
+        "path": str(path),
+        "exists": exists,
+        "signals": report["signals"] if report else 0,
+        "ai_ok": report["ai_ok"] if report else 0,
+        "paired_ai_observations": report["paired_ai_observations"] if report else 0,
+    }
+
+
 @app.post("/ai/review")
 def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = False, detailed: bool = False):
     from ai_runtime import review_analysis
@@ -60,15 +85,29 @@ def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = F
         data = analyze_market(symbol, timeframe)
         journal = PaperJournal()
         signal_id = journal.record_signal(data, origin="API_REVIEW")
+        logger.info(
+            "PAPER technical persisted observation=%s symbol=%s timeframe=%s direction=%s",
+            signal_id[:12],
+            data["technical_signal"].symbol,
+            data["technical_signal"].timeframe,
+            data["technical_signal"].direction.value,
+        )
         decision = review_analysis(data, mode_override="ADVISORY" if advisory else None)
         if decision is None:
             decision = HybridDecision(
                 technical=data["technical_signal"], final=data["technical_signal"], mode=AIMode.OFF
             )
         journal.record_ai(signal_id, decision)
+        if decision.ai is not None:
+            logger.info(
+                "PAPER AI persisted observation=%s status=%s",
+                signal_id[:12],
+                decision.ai.status,
+            )
         snapshot = data.get("ai_snapshot") or build_snapshot(
             data["frame"], data["symbol"], data["timeframe"], data["as_of"]
         )
         return {"text": format_decision(snapshot, decision, detailed=detailed), "source": "API_SERVER"}
-    except Exception:
+    except Exception as exc:
+        logger.error("PAPER API review failed type=%s", type(exc).__name__)
         return {"text": "AI_UNAVAILABLE: API_ANALYSIS_ERROR", "source": "API_SERVER"}
