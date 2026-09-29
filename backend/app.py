@@ -15,10 +15,14 @@ def analyze(symbol: str = "BTCUSDT", timeframe: str = "1h"):
     try:
         data = analyze_market(symbol, timeframe)
         from ai_runtime import review_analysis
+        from paper_journal import PaperJournal
         from strategy_engine import legacy_result
 
+        journal = PaperJournal()
+        signal_id = journal.record_signal(data, origin="API_ANALYZE")
         review = review_analysis(data)
         if review is not None:
+            journal.record_ai(signal_id, review)
             data.update(legacy_result(review.final, data["frame"]))
             data["deepseek"] = review.ai.model_dump(mode="json") if review.ai else None
             if data.get("ai_snapshot") is not None:
@@ -49,15 +53,19 @@ def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = F
     from ai_runtime import review_analysis
     from hybrid_strategy import AIMode, HybridDecision
     from market_snapshot import build_snapshot
+    from paper_journal import PaperJournal
     from telegram_ai import format_decision
 
     try:
         data = analyze_market(symbol, timeframe)
+        journal = PaperJournal()
+        signal_id = journal.record_signal(data, origin="API_REVIEW")
         decision = review_analysis(data, mode_override="ADVISORY" if advisory else None)
         if decision is None:
             decision = HybridDecision(
                 technical=data["technical_signal"], final=data["technical_signal"], mode=AIMode.OFF
             )
+        journal.record_ai(signal_id, decision)
         snapshot = data.get("ai_snapshot") or build_snapshot(
             data["frame"], data["symbol"], data["timeframe"], data["as_of"]
         )

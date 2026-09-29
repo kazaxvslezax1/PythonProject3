@@ -83,6 +83,8 @@ async def test_correct_facts_opinions_and_same_input_values(tmp_path, snapshot):
     assert decision.ai.status == "OK" and decision.ai.fact_check_status == "PASSED"
     text = format_decision(snapshot, decision)
     assert "Проверенные факты" in text
+    assert "Все проверенные сравнения:" not in text
+    assert "Все проверенные сравнения:" in format_decision(snapshot, decision, detailed=True)
     assert "Альтернативный сценарий" not in text
     assert decision.ai.interpretation_status == "UNVERIFIED"
     assert (await a.analyze(snapshot)).cached

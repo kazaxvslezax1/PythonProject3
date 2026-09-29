@@ -25,13 +25,14 @@ def candles():
 
 
 @pytest.fixture(autouse=True)
-def no_external_network(monkeypatch):
+def no_external_network(monkeypatch, tmp_path):
     import socket
 
     def blocked(*args, **kwargs):
         raise AssertionError("Network prohibited in tests")
 
     monkeypatch.setattr(socket.socket, "connect", blocked)
+    monkeypatch.setenv("PAPER_JOURNAL_PATH", str(tmp_path / "paper_journal.sqlite3"))
 
 
 @pytest.fixture

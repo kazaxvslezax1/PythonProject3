@@ -17,6 +17,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     import telebot
     import telegram_handlers as handlers
+    from paper_journal import PaperJournal
     from telegram_ai import register_ai_handlers
 
     telebot.logger.addFilter(TelegramLogFilter(token))
@@ -25,8 +26,11 @@ def main():
     actual = telebot.TeleBot(token)
     actual.exception_handler = SafeTelegramErrors()
     handlers.bot.configure(actual)
+    handlers.auto_trade_manager.journal = PaperJournal()
     if not handlers.auto_trade_manager.load_data():
         raise SystemExit("Paper ledger could not be restored; inspect storage before restarting")
+    if handlers.auto_trade_manager.get_active_positions():
+        handlers.auto_trade_manager.start_monitoring()
     logging.getLogger(__name__).info("Paper-only bot starting; background scanners require explicit commands")
     if not run_polling(actual):
         raise SystemExit("Telegram polling failed; see safe diagnostics above")

@@ -1,6 +1,7 @@
 """Paper position bookkeeping only; no exchange order APIs."""
 
 import copy
+import hashlib
 import json
 import logging
 import threading
@@ -19,11 +20,12 @@ def format_price(value):
 class AutoTradeManager:
     """Автоматическое управление торговыми позициями"""
 
-    def __init__(self, bot, rules_loader=None):
+    def __init__(self, bot, rules_loader=None, journal=None):
         self.bot = bot
         from exchange_rules import get_exchange_rules
 
         self.rules_loader = rules_loader or get_exchange_rules
+        self.journal = journal
         self.paper_notional = 1000.0
         self._lock = threading.RLock()
         self.data_path = Path(__file__).resolve().parent.parent / "runtime" / "paper_positions.json"
@@ -72,6 +74,39 @@ class AutoTradeManager:
             return False, "Daily entry limit"
         return True, "Paper entry allowed"
 
+    def portfolio_snapshot(self):
+        active = self.get_active_positions()
+        notionals = [
+            float(p.get("paper_notional") or float(p.get("quantity", 0)) * float(p.get("entry_price", 0)))
+            for p in active.values()
+        ]
+        unknown_notional = any(value <= 0 for value in notionals)
+        reserved = sum(
+            value * float(p.get("current_size", 100)) / 100 for value, p in zip(notionals, active.values())
+        )
+        capital = self.journal.paper_equity() if self.journal else None
+        available = None if capital is None else 0.0 if unknown_notional else max(0.0, capital - reserved)
+        return {
+            "active_slots_global": len(active),
+            "slot_limit": self.trading_config["MAX_ACTIVE_POSITIONS"],
+            "reserved_usd": reserved,
+            "capital_model_usd": capital,
+            "available_model_usd": available,
+            "unknown_active_notional": unknown_notional,
+            "requested_notional_usd": self.paper_notional,
+            "manager_scope": "per-chat",
+            "manager_config_version": hashlib.sha256(
+                json.dumps(self.trading_config, sort_keys=True).encode()
+            ).hexdigest()[:16],
+        }
+
+    def record_skipped_signal(self, chat_id, reason, signal_id=None, symbol=None):
+        if self.journal:
+            context = self.portfolio_snapshot()
+            if symbol:
+                context["symbol"] = symbol
+            self.journal.record_attempt(signal_id, chat_id, "REJECTED", reason, context)
+
     def create_auto_trade(
         self,
         chat_id,
@@ -82,9 +117,21 @@ class AutoTradeManager:
         direction="LONG",
         ai_confidence=5.0,
         volume_ratio=1.0,
+        signal_id=None,
+        timeframe=None,
     ):
         """Создает автоматическую сделку с проверками"""
         try:
+            if self.journal and signal_id and self.journal.has_attempt(signal_id, chat_id):
+                return None  # One decision per candle and chat, including a rejected entry.
+
+            def reject(reason):
+                if self.journal:
+                    self.journal.record_attempt(
+                        signal_id, chat_id, "REJECTED", reason, self.portfolio_snapshot()
+                    )
+                return None
+
             # 🔽 🔽 🔽 ВКЛЮЧАЕМ ПРОВЕРКИ ОБРАТНО 🔽 🔽 🔽
             can_open, reason = self.should_open_trade(chat_id, symbol, ai_confidence, volume_ratio)
             if not can_open:
@@ -94,7 +141,7 @@ class AutoTradeManager:
                     self.bot.send_message(chat_id, f"🚫 {reason}")
                 except Exception:
                     pass
-                return None
+                return reject(reason)
 
             # 🔽 УБИРАЕМ СТАРУЮ ДИАГНОСТИКУ (она больше не нужна)
             # print(f"🎯 СОЗДАЮ СДЕЛКУ {symbol} (проверки отключены)")
@@ -105,28 +152,33 @@ class AutoTradeManager:
             from signal_models import direction as normalize_direction
 
             direction = normalize_direction(direction).value
+            requested_entry = float(entry_price)
             plan = TradePlan(
                 direction=direction, entry=entry_price, stop_loss=stop_loss, take_profits=take_profits
             )
             if plan.rr < 2:
-                return None
+                return reject("RISK_REWARD_BELOW_2")
             if (
                 abs(stop_loss - entry_price) / entry_price
                 > self.trading_config["MAX_STOP_LOSS_PERCENT"] / 100
             ):
-                return None
+                return reject("STOP_DISTANCE_LIMIT")
 
             current_price = self._get_current_price(symbol)
             if not current_price:
-                return None
+                return reject("PAPER_QUOTE_UNAVAILABLE")
             fill = current_price * (1.0005 if direction == "LONG" else 0.9995)
             rules = self.rules_loader(symbol)
             plan = rules.plan(
                 TradePlan(direction=direction, entry=fill, stop_loss=stop_loss, take_profits=take_profits)
             )
             if plan.rr < 2 or abs(plan.entry - plan.stop_loss) / plan.entry > 0.10:
-                return None
+                return reject("MOVED_PLAN_RISK_LIMIT")
             quantity = rules.quantity(self.paper_notional, plan.entry)
+            if self.journal:
+                self.journal.record_attempt(
+                    signal_id, chat_id, "PENDING", "PAPER_ENTRY_PENDING", self.portfolio_snapshot()
+                )
             entry_price, stop_loss, take_profits = plan.entry, plan.stop_loss, plan.take_profits
             position_id = f"{symbol}_{uuid.uuid4().hex}"
 
@@ -141,6 +193,10 @@ class AutoTradeManager:
                 "current_size": 100,
                 "quantity": quantity,
                 "paper_notional": quantity * entry_price,
+                "entry_quote_price": current_price,
+                "requested_entry_price": requested_entry,
+                "signal_id": signal_id,
+                "timeframe": timeframe,
                 "chat_id": chat_id,
                 "created_at": datetime.now(),
                 "executed_tps": [],
@@ -226,6 +282,12 @@ class AutoTradeManager:
                 current_price = self._get_current_price(position["symbol"])
                 if not current_price:
                     continue
+
+                if self.journal:
+                    try:
+                        self.journal.record_mark(position_id, current_price, position)
+                    except Exception:
+                        logging.getLogger(__name__).warning("Paper mark journal write failed")
 
                 self._check_position_triggers(position, current_price)
 
@@ -510,6 +572,12 @@ class AutoTradeManager:
                 self.data_path,
                 {"active_positions": self.active_positions, "trade_history": self.trade_history},
             )
+            if self.journal:
+                try:
+                    self.journal.reconcile_positions(self.active_positions, self.trade_history)
+                except Exception:
+                    # JSON remains authoritative. A startup reconciliation can recover this write.
+                    logging.getLogger(__name__).error("Paper journal reconciliation failed")
         return True
 
     def load_data(self):
@@ -541,6 +609,8 @@ class AutoTradeManager:
                 self.trade_history = history
             if source != self.data_path:
                 self.save_data()  # preserve original legacy file unchanged
+            if self.journal:
+                self.journal.reconcile_positions(self.active_positions, self.trade_history, recovering=True)
             return True
         except Exception as exc:
             logging.getLogger(__name__).error("Position restore failed: %s", type(exc).__name__)
@@ -562,6 +632,7 @@ class AutoTradeManager:
         position["current_size"] -= size
         position.setdefault("fills", []).append(
             {
+                "trigger_price": price,
                 "price": fill,
                 "size": size,
                 "reason": reason,
@@ -633,13 +704,19 @@ class SmartTakeProfitAdapter:
         if self.chat_id is None:
             return None
         data = analyze_market(symbol)
+        from paper_journal import PaperJournal
+
+        manager = self._manager()
+        journal = manager.journal or PaperJournal()
+        signal_id = journal.record_signal(data, origin="TELEGRAM_SMART_TP")
         signal = data["technical_signal"]
         review = review_analysis(data)
         if review is not None:
+            journal.record_ai(signal_id, review)
             signal = review.final
         if signal.direction != normalize_direction(direction) or signal.plan is None:
             return None
-        return self._manager().create_auto_trade(
+        return manager.create_auto_trade(
             self.chat_id,
             symbol,
             entry_price,
@@ -648,4 +725,6 @@ class SmartTakeProfitAdapter:
             signal.direction.value,
             signal.quality,
             data["volume_ratio"],
+            signal_id=signal_id,
+            timeframe=data["timeframe"],
         )

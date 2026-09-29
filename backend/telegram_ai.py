@@ -1,6 +1,7 @@
 """AI Telegram commands, isolated from the legacy router and paper execution."""
 
 import asyncio
+import io
 import json
 import os
 import threading
@@ -103,7 +104,7 @@ def format_decision(snapshot, decision, detailed=False):
         if detailed:
             lines.append("\nВсе проверенные сравнения: " + format_facts(decision.ai.result.facts, snapshot))
         else:
-            lines.append("Все сравнения: /deepseek " + s.symbol + " " + s.timeframe + " --details")
+            lines.append("Для полного перечня сравнений добавьте --details.")
     lines.append("Реальные ордера отключены.")
     return "\n".join(lines)
 
@@ -195,7 +196,91 @@ def register_ai_handlers(
         if authorized(message):
             send(message, json.dumps(load_comparison(), ensure_ascii=False, indent=2))
 
+    def paper_command(message):
+        if not authorized(message):
+            return
+        from paper_journal import PaperJournal
+
+        try:
+            r = PaperJournal().report()
+            lines = [
+                f"PAPER-журнал: {r['period_start']} — {r['period_end']}",
+                f"Сигналы {r['signals']}; HOLD {r['hold']}; отклонённые входы {r['rejected_entries']}",
+                f"Фактические PAPER-позиции {r['paper_positions']}; закрыты {r['closed_positions']}",
+                f"Net PnL закрытых: {r['net_pnl_usd_closed']:.2f} USD; "
+                f"реализованная просадка {r['realized_max_drawdown_pct']:.2f}%",
+                f"DeepSeek: первый ответ OK {r['ai_ok']}; недоступен {r['ai_unavailable']}; "
+                f"успешные повторы {r['ai_retry_ok']}; "
+                f"без проверки {r['ai_not_reviewed']}; парных наблюдений {r['paired_ai_observations']}",
+            ]
+            if message.text.split()[0].split("@")[0] == "/paper_report":
+                lines.append("Пары/TF (закрытые сделки, net USD):")
+                for pair, item in sorted(r["by_pair_timeframe"].items()):
+                    lines.append(f"{pair}: {item['closed']}, {item['net_pnl_usd']:.2f}")
+                c = r["control_decisions"]
+                lines.append(
+                    f"Контроль A/B: технически допущено {c['technical_allow']}; "
+                    f"AI подтвердил {c['ai_allow']}, отклонил {c['ai_veto']}, "
+                    f"недоступен {c['ai_unknown']}"
+                )
+                if c["actual_vs_global_model_mismatch"]:
+                    lines.append(
+                        "Внимание: фактический менеджер открыл "
+                        f"{c['actual_vs_global_model_mismatch']} входов вне общего контрольного лимита."
+                    )
+                if r["ai_error_reasons"]:
+                    lines.append(
+                        "Ошибки DeepSeek: "
+                        + ", ".join(f"{key}={value}" for key, value in sorted(r["ai_error_reasons"].items()))
+                    )
+                if r["rejected_reasons"]:
+                    lines.append(
+                        "Причины пропуска: "
+                        + ", ".join(f"{key}={value}" for key, value in sorted(r["rejected_reasons"].items()))
+                    )
+                state = r["current_portfolio_model"]
+                available = state["available_lower_bound_usd"]
+                available_text = f"{available:.2f} USD" if available is not None else "неизвестно"
+                lines.append(
+                    f"Контрольный капитал, нижняя оценка доступного: "
+                    f"{available_text}; "
+                    f"занятые слоты {state['active_slots_global']}/{state['slot_limit']}"
+                )
+                model = r["modeled_same_fills_costs"]
+                lines.append(
+                    f"Те же fills, модель base/double: {model['base_usd']:.2f}/"
+                    f"{model['double_usd']:.2f} USD; покрыто {model['covered_positions']} закрытий"
+                )
+                lines.append("Просадка только по реализованным закрытиям; внутрисвечной риск неизвестен.")
+                if r["sampled_max_position_drawdown_pct"] is not None:
+                    lines.append(
+                        "Максимальная просадка отдельной позиции по ticker-отметкам: "
+                        f"{r['sampled_max_position_drawdown_pct']:.2f}% (выборка раз в пять минут)."
+                    )
+            if r["sample_warning"]:
+                lines.append("Выборка закрытых сделок мала (<30); выводы о качестве преждевременны.")
+            send(message, "\n".join(lines))
+        except Exception as exc:
+            send(message, "PAPER-журнал недоступен: " + type(exc).__name__)
+
+    def paper_export_command(message):
+        if not authorized(message):
+            return
+        from paper_journal import PaperJournal
+
+        try:
+            parts = message.text.split()
+            kind = parts[1].lower() if len(parts) > 1 else "csv"
+            payload = PaperJournal().export(kind).encode("utf-8")
+            document = io.BytesIO(payload)
+            document.name = "paper_journal." + kind
+            bot.send_document(message.chat.id, document)
+        except Exception as exc:
+            send(message, "PAPER-экспорт недоступен: " + type(exc).__name__)
+
     bot.message_handler(commands=["deepseek", "ai_signal"])(analyze_command)
     bot.message_handler(commands=["ai_status"])(status_command)
     bot.message_handler(commands=["ai_performance"])(performance_command)
+    bot.message_handler(commands=["paper_journal", "paper_report"])(paper_command)
+    bot.message_handler(commands=["paper_export"])(paper_export_command)
     return state

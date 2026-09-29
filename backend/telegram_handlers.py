@@ -9672,6 +9672,9 @@ TP3: {format_price(take_profits[2])} (+6.0%)
 def create_auto_trade_from_button(chat_id, symbol, message_id):
     analysis=auto_trading_scanner._analyze_symbol(symbol)
     if not analysis or not auto_trading_scanner._is_good_signal(analysis):
+        if analysis:
+            auto_trade_manager.record_skipped_signal(
+                chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol)
         bot.edit_message_text('HOLD: сигнал или независимые фильтры не пройдены',chat_id=chat_id,message_id=message_id)
         return
     pid=auto_trading_scanner._create_auto_trade(chat_id,symbol,analysis)
@@ -10047,12 +10050,16 @@ class AutoTradingScanner:
                     # Проверяем лимиты перед сканированием
                     can_trade, reason = self.auto_trade_manager.can_create_auto_trade(chat_id, symbol)
                     if not can_trade:
+                        self.auto_trade_manager.record_skipped_signal(chat_id, 'SCANNER_PRECHECK_REJECTED', symbol=symbol)
                         continue
 
                     # Получаем анализ символа (упрощенная версия)
                     analysis = self._analyze_symbol(symbol)
                     if analysis and self._is_good_signal(analysis):
                         self._create_auto_trade(chat_id, symbol, analysis)
+                    elif analysis:
+                        self.auto_trade_manager.record_skipped_signal(
+                            chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol)
 
                     # Пауза между символами
                     time.sleep(2)
@@ -10069,9 +10076,13 @@ class AutoTradingScanner:
         try:
             data = analyze_market(symbol)
             signal = data['technical_signal']
+            from paper_journal import PaperJournal
+            journal = self.auto_trade_manager.journal or PaperJournal()
+            signal_id = journal.record_signal(data, origin='TELEGRAM_SCANNER')
             from ai_runtime import review_analysis
             review = review_analysis(data)
             if review is not None:
+                journal.record_ai(signal_id, review)
                 signal = review.final
             if signal.plan is None:
                 return None
@@ -10079,7 +10090,8 @@ class AutoTradingScanner:
             return {'symbol':symbol, 'current_price':plan.entry, 'entry_price':plan.entry,
                     'direction':signal.direction.value, 'ai_confidence':signal.quality,
                     'volume_ratio':data['volume_ratio'], 'stop_loss':plan.stop_loss,
-                    'take_profit':plan.take_profits[-1], 'take_profits':plan.take_profits}
+                    'take_profit':plan.take_profits[-1], 'take_profits':plan.take_profits,
+                    'signal_id': signal_id, 'timeframe': data['timeframe']}
         except Exception:
             return None
 
@@ -10118,7 +10130,8 @@ class AutoTradingScanner:
     def _create_auto_trade(self, chat_id, symbol, analysis):
         return self.auto_trade_manager.create_auto_trade(chat_id,symbol,analysis['entry_price'],
             analysis['stop_loss'],analysis['take_profits'],analysis['direction'],
-            analysis['ai_confidence'],analysis['volume_ratio'])
+            analysis['ai_confidence'],analysis['volume_ratio'],
+            signal_id=analysis.get('signal_id'), timeframe=analysis.get('timeframe'))
 # Создаем глобальный экземпляр авто-трейдинга
 auto_trading_scanner = AutoTradingScanner(bot, auto_trade_manager)
 # 🔼 🔼 🔼 КОНЕЦ СИСТЕМЫ АВТО-ТРЕЙДИНГА 🔼 🔼 🔼
