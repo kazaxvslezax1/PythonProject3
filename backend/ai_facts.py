@@ -63,3 +63,85 @@ def format_facts(claims, snapshot):
         f"{signs[c.relation]} {catalog[c.fact_id]['right']}={catalog[c.fact_id]['right_value']:.10g}"
         for c in claims
     )
+
+
+class FactExplanationError(ValueError):
+    """Safe reason code; never includes model prose or malformed input values."""
+
+
+def explain_facts(claims, snapshot):
+    """Presentation only. Recheck the complete fact set before selecting up to five factors."""
+    import math
+
+    try:
+        catalog = fact_catalog(snapshot)
+        if not all(math.isfinite(f[k]) for f in catalog.values() for k in ("left_value", "right_value")):
+            raise FactExplanationError("INVALID_MARKET_DATA")
+        if check_facts(claims, snapshot):
+            raise FactExplanationError("AI_FACT_CHECK_FAILED")
+    except (KeyError, TypeError, AttributeError):
+        raise FactExplanationError("INVALID_MARKET_DATA") from None
+
+    refs = snapshot.references()
+    rel = {c.fact_id: c.relation for c in claims}
+    up, down, risks = [], [], []
+    words = {"above": "выше", "below": "ниже", "equal": "на уровне"}
+    price, averages = rel["close_vs_SMA_20"], rel["SMA_20_vs_SMA_50"]
+    trend = (
+        f"Цена ({refs['close']:.10g}) {words[price]} SMA20 ({refs['SMA_20']:.10g}); "
+        f"SMA20 {words[averages]} SMA50 ({refs['SMA_50']:.10g})."
+    )
+    if price == averages == "above":
+        up.append(trend + " Цена и расположение средних согласованы в сторону роста.")
+    elif price == averages == "below":
+        down.append(trend + " Цена и расположение средних согласованы в сторону снижения.")
+    else:
+        risks.append(trend + " Смешанная картина по цене и средним.")
+
+    macd = rel["MACD_vs_MACD_Signal"]
+    momentum = f"MACD ({refs['MACD']:.6g}) {words[macd]} сигнальной линии ({refs['MACD_Signal']:.6g})"
+    if macd == "above":
+        up.append(momentum + ": положительный импульс по MACD.")
+    elif macd == "below":
+        down.append(momentum + ": отрицательный импульс по MACD.")
+    else:
+        risks.append(momentum + ": направленного перевеса нет.")
+
+    adx = rel["ADX_vs_25"]
+    risks.append(
+        f"ADX={refs['ADX']:.6g} "
+        + {
+            "below": "ниже 25: тренд недостаточно выражен.",
+            "above": "выше 25: тренд выражен; ADX сам не задаёт направление.",
+            "equal": "равен 25: пограничное значение выраженности тренда.",
+        }[adx]
+    )
+    volume = rel["Volume_Ratio_vs_1"]
+    risks.append(
+        f"Объём={refs['Volume_Ratio']:.6g}× среднего: "
+        + {
+            "below": "движение не сопровождается повышенной торговой активностью.",
+            "above": "активность повышена, но сама по себе не подтверждает направление.",
+            "equal": "обычная активность, без превышения среднего.",
+        }[volume]
+    )
+    if rel["RSI_vs_70"] == "above":
+        risks.append(f"RSI={refs['RSI']:.6g} выше 70: зона перекупленности, а не доказательство разворота.")
+    elif rel["RSI_vs_30"] == "below":
+        risks.append(f"RSI={refs['RSI']:.6g} ниже 30: зона перепроданности, а не доказательство разворота.")
+
+    if price == averages == macd == "above":
+        conclusion = "Цена, средние и MACD согласованы в сторону роста. Это не прогноз продолжения движения."
+    elif price == averages == macd == "below":
+        conclusion = (
+            "Цена, средние и MACD согласованы в сторону снижения. Это не прогноз продолжения движения."
+        )
+    else:
+        conclusion = "Подтверждения разнонаправленны или нейтральны; однозначного вывода о направлении нет."
+    if adx == "below" and volume == "below":
+        conclusion += " Низкие ADX и относительный объём ограничивают подтверждение движения."
+    elif adx == "below":
+        conclusion += " Подтверждение направленного движения ограничено низким ADX."
+    elif volume == "below":
+        conclusion += " Объём не даёт дополнительного подтверждения движения."
+    return {"up": up, "down": down, "risks": risks, "conclusion": conclusion}

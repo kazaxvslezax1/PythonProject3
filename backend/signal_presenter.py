@@ -4,6 +4,8 @@
 def format_technical(data):
     if "error" in data:
         return "DATA_UNAVAILABLE: " + str(data["error"])
+    if data.get("ai_summary"):
+        return data["ai_summary"]
     signal = data["signal"]
     lines = [
         f"{data['symbol']} {data['timeframe']}: {signal['direction']}",

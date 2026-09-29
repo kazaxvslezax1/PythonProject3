@@ -9,7 +9,7 @@ from typing import Literal
 
 import requests
 from ai_backtest import load_comparison
-from ai_facts import format_facts
+from ai_facts import FactExplanationError, explain_facts, format_facts
 from deepseek_analyzer import DeepSeekAnalyzer
 from hybrid_strategy import AIMode, hybrid_signal
 from market_snapshot import live_snapshot
@@ -46,23 +46,21 @@ class AsyncWorker:
         self.loop.close()
 
 
-def format_decision(snapshot, decision):
+def format_decision(snapshot, decision, detailed=False):
     s = decision.technical
-    values = snapshot.indicators
+    explanation = None
+    error = None
+    if decision.ai is not None and decision.ai.status == "OK":
+        try:
+            explanation = explain_facts(decision.ai.result.facts, snapshot)
+        except FactExplanationError as exc:
+            error = str(exc)
+    final = "HOLD" if error and decision.mode == AIMode.FILTER else decision.final.direction.value
     lines = [
-        f"{s.symbol} {s.timeframe} | {decision.mode.value}",
-        f"Technical: {s.direction.value}; final: {decision.final.direction.value}",
-        f"Quality: {s.quality:.1f}/10 (эвристический балл, не вероятность)",
-        "Причины: " + "; ".join(s.reasons),
-        "Показатели: "
-        + ", ".join(
-            f"{k}={values[k]:.6g}"
-            for k in ("RSI", "MACD", "SMA_20", "SMA_50", "EMA_12", "EMA_26", "ATR", "ADX")
-        ),
-        f"BB: {values['BB_Lower']:.6g} / {values['BB_Middle']:.6g} / {values['BB_Upper']:.6g}",
-        f"Объём: {values['Volume_Ratio']:.2f}x; изменение {snapshot.volume_change_pct:.2f}%",
-        f"Поддержка {snapshot.support:.10g}; сопротивление {snapshot.resistance:.10g}",
-        f"Свеча закрыта: {s.timestamp.isoformat()}",
+        f"{s.symbol} {s.timeframe} | {decision.mode.value} | PAPER",
+        f"Технический сигнал: {s.direction.value}; итоговый: {final}",
+        f"Качество: {s.quality:.1f}/10 — эвристика, не вероятность",
+        f"Закрытая свеча: {s.timestamp.isoformat()}",
     ]
     if s.plan:
         p = s.plan
@@ -75,29 +73,38 @@ def format_decision(snapshot, decision):
         lines.append("Отклонено: " + decision.veto_reason)
     if decision.ai is None:
         lines.append("AI OFF; техническая стратегия")
-    elif decision.ai.status != "OK":
-        lines.append("AI_UNAVAILABLE: " + str(decision.ai.reason))
-    else:
-        result = decision.ai.result
-        refs = snapshot.references()
-
-        def explain(item):
-            return f"[{item.reference}={refs[item.reference]:.6g}]"
-
+    elif decision.ai.status != "OK" or error:
+        lines.append("AI_UNAVAILABLE: " + str(error or decision.ai.reason))
+    elif explanation:
+        lines.append("Проверенные факты и их интерпретация по фиксированным правилам:")
+        for title, key in [
+            ("Что поддерживает рост", "up"),
+            ("Что поддерживает снижение или препятствует росту", "down"),
+            ("Ключевые риски и ограничения", "risks"),
+        ]:
+            lines.append("\n" + title + ":")
+            lines.extend("• " + text for text in explanation[key])
+            if not explanation[key]:
+                lines.append("В выбранных факторах отдельного подтверждения нет.")
         lines.extend(
             [
-                "DeepSeek: " + result.direction + " / " + result.confirmation,
-                "За: " + "; ".join(map(explain, result.factors_for)),
-                "Против: " + "; ".join(map(explain, result.factors_against)),
-                "Риски: " + "; ".join(map(explain, result.risks)),
-                "Рост: " + result.bullish_scenario.relation + " " + explain(result.bullish_scenario),
-                "Падение: " + result.bearish_scenario.relation + " " + explain(result.bearish_scenario),
-                "Отмена: " + "; ".join(v.relation + " " + explain(v) for v in result.invalidation_conditions),
-                "Проверенные факты: " + format_facts(result.facts, snapshot),
-                "Свободный текст AI не показан: его фактическая достоверность не подтверждена.",
+                "\nУсловия возможного роста и снижения (не прогноз):",
+                f"Рост: выход цены выше сопротивления {snapshot.resistance:.10g}; сам пробой не гарантирует продолжения.",
+                f"Снижение: уход цены ниже поддержки {snapshot.support:.10g}; сам пробой не гарантирует продолжения.",
+                "\nУсловия отмены сценария:",
             ]
         )
-    lines.append("Только анализ / PAPER. Реальные ордера отключены.")
+        if s.plan:
+            side = "ниже или равна" if s.direction.value == "LONG" else "выше или равна"
+            lines.append(f"Исходный {s.direction.value}-план: цена {side} SL {s.plan.stop_loss:.10g}.")
+        else:
+            lines.append("Активного технического плана нет — торговые уровни отмены не рассчитаны.")
+        lines.append("\nКраткое заключение: " + explanation["conclusion"])
+        if detailed:
+            lines.append("\nВсе проверенные сравнения: " + format_facts(decision.ai.result.facts, snapshot))
+        else:
+            lines.append("Все сравнения: /deepseek " + s.symbol + " " + s.timeframe + " --details")
+    lines.append("Реальные ордера отключены.")
     return "\n".join(lines)
 
 
@@ -142,6 +149,7 @@ def register_ai_handlers(
                         "symbol": parts[1].upper(),
                         "timeframe": parts[2] if len(parts) > 2 else "1h",
                         "advisory": parts[0].split("@")[0] == "/deepseek",
+                        "detailed": "--details" in parts[3:],
                     },
                     timeout=(3, 100),
                 )
@@ -153,7 +161,7 @@ def register_ai_handlers(
             decision = run(
                 hybrid_signal(snapshot, get_analyzer() if selected != AIMode.OFF else None, selected)
             )
-            send(message, format_decision(snapshot, decision))
+            send(message, format_decision(snapshot, decision, detailed="--details" in parts[3:]))
         except Exception as exc:
             send(message, "AI_UNAVAILABLE: " + type(exc).__name__ + "; торговое действие не создано")
 

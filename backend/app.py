@@ -21,6 +21,10 @@ def analyze(symbol: str = "BTCUSDT", timeframe: str = "1h"):
         if review is not None:
             data.update(legacy_result(review.final, data["frame"]))
             data["deepseek"] = review.ai.model_dump(mode="json") if review.ai else None
+            if data.get("ai_snapshot") is not None:
+                from telegram_ai import format_decision
+
+                data["ai_summary"] = format_decision(data["ai_snapshot"], review)
         return {
             k: v for k, v in data.items() if k not in ("frame", "technical_signal", "as_of", "ai_snapshot")
         }
@@ -41,7 +45,7 @@ def ai_status():
 
 
 @app.post("/ai/review")
-def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = False):
+def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = False, detailed: bool = False):
     from ai_runtime import review_analysis
     from hybrid_strategy import AIMode, HybridDecision
     from market_snapshot import build_snapshot
@@ -57,6 +61,6 @@ def ai_review(symbol: str = "BTCUSDT", timeframe: str = "1h", advisory: bool = F
         snapshot = data.get("ai_snapshot") or build_snapshot(
             data["frame"], data["symbol"], data["timeframe"], data["as_of"]
         )
-        return {"text": format_decision(snapshot, decision), "source": "API_SERVER"}
+        return {"text": format_decision(snapshot, decision, detailed=detailed), "source": "API_SERVER"}
     except Exception:
         return {"text": "AI_UNAVAILABLE: API_ANALYSIS_ERROR", "source": "API_SERVER"}
