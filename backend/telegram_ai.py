@@ -37,6 +37,30 @@ class PaperJournalStatus(BaseModel):
     paired_ai_observations: int
 
 
+class ScannerStatus(BaseModel):
+    model_config = ConfigDict(extra="ignore", strict=True)
+    enabled: bool
+    running: bool
+    healthy: bool
+    experiment_id: str | None = None
+    strategy_version: str
+    symbols: list[str]
+    timeframes: list[str]
+    journal_path: str
+    last_success_at: str | None = None
+    last_candle_close: str | None = None
+    next_scan_at: str | None = None
+    observations_today: int = 0
+    live_today: int = 0
+    backfill_today: int = 0
+    ai_calls_today: int = 0
+    ai_failures_today: int = 0
+    inflight_unknown: int = 0
+    budget_used_usd: float | None = None
+    budget_remaining_usd: float | None = None
+    error: str | None = None
+
+
 class AsyncWorker:
     def __init__(self):
         self.loop = asyncio.new_event_loop()
@@ -206,6 +230,56 @@ def register_ai_handlers(
         if authorized(message):
             send(message, json.dumps(load_comparison(), ensure_ascii=False, indent=2))
 
+    def scanner_status_command(message):
+        if not authorized(message):
+            return
+        try:
+            response = remote.get("http://127.0.0.1:8000/paper/scanner/status", timeout=(3, 5))
+            response.raise_for_status()
+            status = ScannerStatus.model_validate(response.json())
+            send(
+                message,
+                "PAPER Research: "
+                f"enabled={status.enabled}; running={status.running}; healthy={status.healthy}\n"
+                f"Experiment {status.experiment_id}; strategy {status.strategy_version}\n"
+                f"Пары: {', '.join(status.symbols)}; TF: {', '.join(status.timeframes)}\n"
+                f"Последний успешный scan: {status.last_success_at}; "
+                f"последняя свеча: {status.last_candle_close}; следующий scan: {status.next_scan_at}\n"
+                f"Сегодня наблюдений {status.observations_today} "
+                f"(LIVE {status.live_today}, BACKFILL {status.backfill_today}); "
+                f"AI вызовов {status.ai_calls_today}, ошибок {status.ai_failures_today}; "
+                f"незавершённых {status.inflight_unknown}\n"
+                f"Бюджет USD: использовано {status.budget_used_usd}; "
+                f"осталось {status.budget_remaining_usd}\n"
+                f"SQLite: {status.journal_path}"
+                + (f"\nОшибка запуска: {status.error}" if status.error else ""),
+            )
+        except Exception:
+            send(message, "PAPER scanner: статус API недоступен; проверьте запуск API.")
+
+    def paper_errors_command(message):
+        if not authorized(message):
+            return
+        try:
+            response = remote.get("http://127.0.0.1:8000/paper/scanner/errors", timeout=(3, 5))
+            response.raise_for_status()
+            records = response.json().get("errors", [])
+            if not isinstance(records, list):
+                raise ValueError("Invalid scanner errors")
+            lines = ["Последние ошибки PAPER scanner:"]
+            for item in records[:10]:
+                if not isinstance(item, dict):
+                    continue
+                lines.append(
+                    f"{str(item.get('occurred_at', ''))[:32]} "
+                    f"{str(item.get('stage', ''))[:24]} "
+                    f"{str(item.get('error_type', ''))[:40]} "
+                    f"{str(item.get('symbol') or '')[:20]} {str(item.get('timeframe') or '')[:4]}"
+                )
+            send(message, "\n".join(lines) if len(lines) > 1 else "Ошибок PAPER scanner нет.")
+        except Exception:
+            send(message, "PAPER scanner: ошибки API недоступны.")
+
     def paper_command(message):
         if not authorized(message):
             return
@@ -228,6 +302,9 @@ def register_ai_handlers(
                 f"успешные повторы {r['ai_retry_ok']}; "
                 f"без проверки {r['ai_not_reviewed']}; ответов AI {r['ai_observations']}; "
                 f"проверенных пар сигнал/AI {r['paired_ai_observations']}",
+                f"Research: LIVE {r['research_origins'].get('LIVE', 0)}; "
+                f"BACKFILL {r['research_origins'].get('BACKFILL_TECHNICAL', 0)}; "
+                f"AI не запрашивался {r['ai_not_requested']}",
             ]
             if not local_existed:
                 lines.append("Telegram SQLite создан при первом чтении отчёта; прежних записей в нём нет.")
@@ -275,6 +352,12 @@ def register_ai_handlers(
                         "Причины пропуска: "
                         + ", ".join(f"{key}={value}" for key, value in sorted(r["rejected_reasons"].items()))
                     )
+                if r["research_outcomes"]:
+                    lines.append(
+                        "Исходы research-сигналов по OHLCV: "
+                        + ", ".join(f"{key}={value}" for key, value in sorted(r["research_outcomes"].items()))
+                    )
+                    lines.append("AMBIGUOUS_INTRABAR означает неизвестный порядок касаний внутри свечи.")
                 state = r["current_portfolio_model"]
                 available = state["available_lower_bound_usd"]
                 available_text = f"{available:.2f} USD" if available is not None else "неизвестно"
@@ -318,6 +401,8 @@ def register_ai_handlers(
     bot.message_handler(commands=["deepseek", "ai_signal"])(analyze_command)
     bot.message_handler(commands=["ai_status"])(status_command)
     bot.message_handler(commands=["ai_performance"])(performance_command)
+    bot.message_handler(commands=["paper_scanner_status"])(scanner_status_command)
+    bot.message_handler(commands=["paper_errors"])(paper_errors_command)
     bot.message_handler(commands=["paper_journal", "paper_report"])(paper_command)
     bot.message_handler(commands=["paper_export"])(paper_export_command)
     return state

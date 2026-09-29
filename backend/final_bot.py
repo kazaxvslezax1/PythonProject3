@@ -17,6 +17,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     import telebot
     import telegram_handlers as handlers
+    from paper_execution_bridge import bridge_from_env
     from paper_journal import PaperJournal
     from telegram_ai import register_ai_handlers
 
@@ -31,9 +32,19 @@ def main():
         raise SystemExit("Paper ledger could not be restored; inspect storage before restarting")
     if handlers.auto_trade_manager.get_active_positions():
         handlers.auto_trade_manager.start_monitoring()
-    logging.getLogger(__name__).info("Paper-only bot starting; background scanners require explicit commands")
-    if not run_polling(actual):
-        raise SystemExit("Telegram polling failed; see safe diagnostics above")
+    try:
+        bridge = bridge_from_env(handlers.auto_trade_manager, allowed)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    if bridge is not None:
+        bridge.start()
+    logging.getLogger(__name__).info("Paper-only bot starting; research scanner is API-owned")
+    try:
+        if not run_polling(actual):
+            raise SystemExit("Telegram polling failed; see safe diagnostics above")
+    finally:
+        if bridge is not None:
+            bridge.stop()
 
 
 if __name__ == "__main__":

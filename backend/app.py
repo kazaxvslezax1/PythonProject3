@@ -1,11 +1,48 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from analysis_service import analyze_market
 from fastapi import FastAPI, HTTPException, Request
 from strategy import find_best_timeframe
 
-app = FastAPI(title="Trading analysis (paper only)")
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(application):
+    task = None
+    application.state.paper_scanner = None
+    application.state.paper_scanner_error = None
+    try:
+        from paper_scanner import ResearchScanner, ScannerConfig
+
+        config = ScannerConfig.from_env()
+        if config.enabled:
+            scanner = ResearchScanner(config=config)
+            application.state.paper_scanner = scanner
+            task = asyncio.create_task(scanner.run(), name="paper-research-scanner")
+            logger.info("PAPER research scanner started experiment=%s", config.experiment_id)
+    except Exception as exc:
+        application.state.paper_scanner_error = type(exc).__name__
+        logger.error("PAPER research scanner initialization failed type=%s", type(exc).__name__)
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+
+app = FastAPI(title="Trading analysis (paper only)", lifespan=lifespan)
+
+
+def local_diagnostics(request):
+    if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
+        raise HTTPException(status_code=403, detail="Local diagnostics only")
 
 
 @app.get("/")
@@ -56,8 +93,7 @@ def paper_journal_status(request: Request):
     """Local, read-only journal identity for comparing the API and Telegram processes."""
     from paper_journal import PaperJournal, journal_path
 
-    if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
-        raise HTTPException(status_code=403, detail="Local journal diagnostics only")
+    local_diagnostics(request)
     path = journal_path()
     exists = path.is_file()
     logger.info("PAPER journal API path=%s exists=%s", path, exists)
@@ -71,6 +107,44 @@ def paper_journal_status(request: Request):
         "ai_ok": report["ai_ok"] if report else 0,
         "paired_ai_observations": report["paired_ai_observations"] if report else 0,
     }
+
+
+@app.get("/paper/scanner/status")
+def paper_scanner_status(request: Request):
+    from paper_journal import journal_path
+    from paper_scanner import ScannerConfig
+
+    local_diagnostics(request)
+    scanner = getattr(app.state, "paper_scanner", None)
+    if scanner is not None:
+        return scanner.status()
+    try:
+        config = ScannerConfig.from_env()
+        enabled, experiment_id = config.enabled, config.experiment_id
+        symbols, timeframes = list(config.symbols), list(config.timeframes)
+    except Exception:
+        enabled, experiment_id = False, None
+        symbols, timeframes = [], []
+    return {
+        "enabled": enabled,
+        "running": False,
+        "healthy": False,
+        "experiment_id": experiment_id,
+        "strategy_version": "technical-v1",
+        "symbols": symbols,
+        "timeframes": timeframes,
+        "journal_path": str(journal_path()),
+        "error": getattr(app.state, "paper_scanner_error", None) or "NOT_STARTED",
+    }
+
+
+@app.get("/paper/scanner/errors")
+def paper_scanner_errors(request: Request):
+    from paper_journal import PaperJournal
+    from paper_research import ResearchStore
+
+    local_diagnostics(request)
+    return {"errors": ResearchStore(PaperJournal()).errors()}
 
 
 @app.post("/ai/review")

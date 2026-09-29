@@ -75,7 +75,7 @@ class PaperJournal:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 1:
+            if version > 2:
                 raise ValueError("Paper journal schema is newer than this code")
             if version == 0:
                 db.executescript("""
@@ -124,6 +124,43 @@ class PaperJournal:
                 db.execute("INSERT INTO journal_meta VALUES ('created_at', ?)", (now_utc(),))
                 db.execute("INSERT INTO journal_meta VALUES ('cost_settings', ?)", (compact(self.costs),))
                 db.execute("PRAGMA user_version=1")
+            if version < 2:
+                db.executescript("""
+                    CREATE TABLE IF NOT EXISTS research_experiments (
+                        id TEXT PRIMARY KEY, config_json TEXT NOT NULL, started_at TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS research_observations (
+                        signal_id TEXT PRIMARY KEY, experiment_id TEXT NOT NULL,
+                        origin TEXT NOT NULL, data_source TEXT NOT NULL,
+                        market_at TEXT NOT NULL, observed_at TEXT NOT NULL,
+                        regime_json TEXT NOT NULL, quality_bucket TEXT NOT NULL);
+                    CREATE INDEX IF NOT EXISTS ix_research_experiment
+                        ON research_observations(experiment_id, origin);
+                    CREATE TABLE IF NOT EXISTS research_ai_requests (
+                        signal_id TEXT PRIMARY KEY, state TEXT NOT NULL,
+                        attempts INTEGER NOT NULL, requested_at TEXT,
+                        responded_at TEXT, latency_ms REAL, model TEXT,
+                        prompt_version TEXT, budget_decision TEXT NOT NULL,
+                        reason TEXT, usage_json TEXT, estimated_cost_usd REAL);
+                    CREATE TABLE IF NOT EXISTS research_execution (
+                        signal_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                        reason TEXT NOT NULL, recorded_at TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS research_outcomes (
+                        signal_id TEXT PRIMARY KEY, evaluated_through TEXT NOT NULL,
+                        status TEXT NOT NULL, reached_sl INTEGER NOT NULL,
+                        reached_tp1 INTEGER NOT NULL, reached_tp2 INTEGER NOT NULL,
+                        reached_tp3 INTEGER NOT NULL, mfe_pct REAL NOT NULL,
+                        mae_pct REAL NOT NULL, bars INTEGER NOT NULL,
+                        bars_to_outcome INTEGER, version TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS scanner_state (
+                        experiment_id TEXT PRIMARY KEY, heartbeat_at TEXT,
+                        last_success_at TEXT, last_candle_close TEXT,
+                        next_scan_at TEXT, healthy INTEGER NOT NULL DEFAULT 1);
+                    CREATE TABLE IF NOT EXISTS scanner_errors (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_at TEXT NOT NULL,
+                        stage TEXT NOT NULL, error_type TEXT NOT NULL,
+                        symbol TEXT, timeframe TEXT);
+                    PRAGMA user_version=2;
+                """)
             self.started_at = db.execute("SELECT value FROM journal_meta WHERE key='created_at'").fetchone()[
                 0
             ]
@@ -152,7 +189,7 @@ class PaperJournal:
             (event_id, kind, occurred_at, now_utc(), signal_id, position_id, compact(payload or {})),
         )
 
-    def record_signal(self, analysis, *, origin="API"):
+    def record_signal(self, analysis, *, origin="API", research=None):
         signal = analysis["technical_signal"]
         if normalize_symbol(signal.symbol) != signal.symbol:
             raise ValueError("Invalid observed symbol")
@@ -170,6 +207,8 @@ class PaperJournal:
             raise ValueError("Cannot journal an unclosed or future candle")
         signal_id = uid(signal.strategy_version, signal.symbol, signal.timeframe, candle_close)
         market = {
+            "support": float(frame.low.tail(20).min()),
+            "resistance": float(frame.high.tail(20).max()),
             "candles": [
                 {
                     key: str(getattr(row, key)) if key in ("time", "close_time") else float(getattr(row, key))
@@ -222,7 +261,13 @@ class PaperJournal:
                 current = signal.model_dump(mode="json")
                 frozen.pop("timestamp")
                 current.pop("timestamp")
-                if frozen != current or json.loads(existing["market_json"]) != market:
+                frozen_market = json.loads(existing["market_json"])
+                if "support" not in frozen_market and "resistance" not in frozen_market:
+                    # Older observations stored OHLCV but not the derived 20-bar levels.
+                    candles = frozen_market["candles"][-20:]
+                    frozen_market["support"] = min(bar["low"] for bar in candles)
+                    frozen_market["resistance"] = max(bar["high"] for bar in candles)
+                if frozen != current or frozen_market != market:
                     raise ValueError("Conflicting analysis for an already observed candle")
             else:
                 db.execute(
@@ -260,6 +305,26 @@ class PaperJournal:
                 signal_id,
                 payload={"origin": origin, "direction": signal.direction.value, "configured_mode": mode},
             )
+            if research is not None:
+                previous_experiment = db.execute(
+                    "SELECT experiment_id FROM research_observations WHERE signal_id=?", (signal_id,)
+                ).fetchone()
+                if previous_experiment and previous_experiment["experiment_id"] != research["experiment_id"]:
+                    raise ValueError("Candle already belongs to another research experiment")
+                research_origin = "MANUAL_PREEXISTING" if existing is not None else research["origin"]
+                db.execute(
+                    "INSERT OR IGNORE INTO research_observations VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        signal_id,
+                        research["experiment_id"],
+                        research_origin,
+                        research["data_source"],
+                        candle_close,
+                        first_seen,
+                        compact(research["regime"]),
+                        research["quality_bucket"],
+                    ),
+                )
         return signal_id
 
     def record_ai(self, signal_id, decision):
@@ -691,6 +756,19 @@ class PaperJournal:
             fills = {}
             for fill in db.execute("SELECT * FROM paper_fills ORDER BY position_id, ordinal"):
                 fills.setdefault(fill["position_id"], []).append(fill)
+            research_origins = {
+                row["origin"]: row["n"]
+                for row in db.execute(
+                    "SELECT origin, COUNT(*) AS n FROM research_observations GROUP BY origin"
+                )
+            }
+            research_outcomes = {
+                row["status"]: row["n"]
+                for row in db.execute("SELECT status, COUNT(*) AS n FROM research_outcomes GROUP BY status")
+            }
+            ai_not_requested = db.execute(
+                "SELECT COUNT(*) FROM research_ai_requests WHERE state='SKIPPED'"
+            ).fetchone()[0]
         realized = 0.0
         peak = self.costs["capital_usd"]
         worst = 0.0
@@ -795,6 +873,9 @@ class PaperJournal:
                 for reason in sorted({r["ai_reason"] for r in observations if r["ai_reason"]})
             },
             "ai_not_reviewed": sum(r["ai_status"] is None for r in observations),
+            "ai_not_requested": ai_not_requested,
+            "research_origins": research_origins,
+            "research_outcomes": research_outcomes,
             "ai_observations": sum(r["ai_status"] is not None for r in observations),
             "paired_ai_observations": sum(
                 r["ai_status"] == "OK" and r["fact_check"] == "PASSED" for r in observations
@@ -820,11 +901,35 @@ class PaperJournal:
             observations = [
                 dict(r)
                 for r in db.execute(
-                    "SELECT id, symbol, timeframe, candle_close, first_seen, technical_direction, "
-                    "quality, ai_mode, ai_model, prompt_version, ai_at, ai_status, fact_check, "
-                    "ai_direction, final_direction, shadow_decision FROM observations ORDER BY first_seen"
+                    "SELECT o.id, o.strategy_version, o.config_version, o.symbol, o.timeframe, "
+                    "o.candle_close, o.first_seen, o.technical_direction, o.quality, o.signal_json, "
+                    "o.market_json, o.ai_mode, o.ai_model, o.prompt_version, o.ai_at, o.ai_status, "
+                    "o.fact_check, o.ai_direction, o.ai_reason, o.final_direction, o.shadow_decision, "
+                    "r.experiment_id, r.origin, r.data_source, r.market_at, r.regime_json, "
+                    "r.quality_bucket, u.status AS outcome_status, u.reached_sl, u.reached_tp1, "
+                    "u.reached_tp2, u.reached_tp3, u.mfe_pct, u.mae_pct, u.bars, "
+                    "u.bars_to_outcome, u.version AS outcome_version, a.state AS ai_request_state, "
+                    "a.attempts AS ai_request_attempts, a.requested_at, a.responded_at, "
+                    "a.latency_ms, a.budget_decision, a.reason AS ai_request_reason, "
+                    "a.usage_json, a.estimated_cost_usd FROM observations o "
+                    "LEFT JOIN research_observations r ON r.signal_id=o.id "
+                    "LEFT JOIN research_outcomes u ON u.signal_id=o.id "
+                    "LEFT JOIN research_ai_requests a ON a.signal_id=o.id ORDER BY o.first_seen"
                 )
             ]
+            for observation in observations:
+                observation["signal"] = json.loads(observation.pop("signal_json"))
+                observation["market"] = json.loads(observation.pop("market_json"))
+                observation["regime"] = (
+                    json.loads(observation.pop("regime_json"))
+                    if observation["regime_json"] is not None
+                    else None
+                )
+                observation["usage"] = (
+                    json.loads(observation.pop("usage_json"))
+                    if observation["usage_json"] is not None
+                    else None
+                )
             positions = [
                 dict(r)
                 for r in db.execute(
@@ -833,9 +938,38 @@ class PaperJournal:
                     "FROM paper_positions ORDER BY opened_at"
                 )
             ]
+            attempts = [
+                dict(r)
+                for r in db.execute(
+                    "SELECT signal_id, attempted_at, status, reason, position_id "
+                    "FROM entry_attempts ORDER BY attempted_at"
+                )
+            ]
+            fills = [
+                dict(r)
+                for r in db.execute(
+                    "SELECT position_id, ordinal, occurred_at, reason, trigger_price, fill_price, "
+                    "size_pct, net_pnl_pct FROM paper_fills ORDER BY occurred_at"
+                )
+            ]
+            research_execution = [
+                dict(r)
+                for r in db.execute(
+                    "SELECT signal_id, status, reason, recorded_at FROM research_execution "
+                    "ORDER BY recorded_at"
+                )
+            ]
         if kind == "json":
             return json.dumps(
-                {"observations": observations, "positions": positions}, ensure_ascii=False, indent=2
+                {
+                    "observations": observations,
+                    "positions": positions,
+                    "entry_attempts": attempts,
+                    "fills": fills,
+                    "research_execution": research_execution,
+                },
+                ensure_ascii=False,
+                indent=2,
             )
         output = io.StringIO()
         writer = csv.DictWriter(
@@ -850,6 +984,13 @@ class PaperJournal:
                 "direction",
                 "status",
                 "net_pnl_pct",
+                "experiment_id",
+                "origin",
+                "strategy_version",
+                "quality",
+                "ai_status",
+                "outcome_status",
+                "reason",
             ],
         )
         writer.writeheader()
@@ -863,6 +1004,12 @@ class PaperJournal:
                     "time": o["candle_close"],
                     "direction": o["technical_direction"],
                     "status": o["ai_status"] or "NOT_REVIEWED",
+                    "experiment_id": o["experiment_id"],
+                    "origin": o["origin"] or "MANUAL",
+                    "strategy_version": o["strategy_version"],
+                    "quality": o["quality"],
+                    "ai_status": o["ai_status"],
+                    "outcome_status": o["outcome_status"],
                 }
             )
         for p in positions:
@@ -877,6 +1024,26 @@ class PaperJournal:
                     "direction": p["direction"],
                     "status": p["status"],
                     "net_pnl_pct": p["realized_pct"] if p["status"] == "CLOSED" else "",
+                }
+            )
+        for attempt in attempts:
+            writer.writerow(
+                {
+                    "record_type": "ENTRY_ATTEMPT",
+                    "signal_id": attempt["signal_id"],
+                    "time": attempt["attempted_at"],
+                    "status": attempt["status"],
+                    "reason": attempt["reason"],
+                }
+            )
+        for decision in research_execution:
+            writer.writerow(
+                {
+                    "record_type": "RESEARCH_EXECUTION",
+                    "signal_id": decision["signal_id"],
+                    "time": decision["recorded_at"],
+                    "status": decision["status"],
+                    "reason": decision["reason"],
                 }
             )
         return output.getvalue()

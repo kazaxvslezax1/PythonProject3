@@ -182,6 +182,11 @@ class AnalysisStore:
             row = db.execute("SELECT response_json FROM analyses WHERE request_hash=?", (key,)).fetchone()
         return AIResponse.model_validate_json(row[0]) if row else None
 
+    def usage(self, key):
+        with self.connect() as db:
+            row = db.execute("SELECT usage_json FROM analyses WHERE request_hash=?", (key,)).fetchone()
+        return json.loads(row[0]) if row and row[0] else None
+
     def save(self, key, snapshot, response, raw, usage):
         with self.connect() as db:
             db.execute(
