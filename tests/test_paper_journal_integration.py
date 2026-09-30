@@ -259,7 +259,7 @@ def test_paper_report_keeps_local_counts_when_api_unavailable(snapshot):
     bot = Bot()
     register_ai_handlers(bot, api_client=OfflineAPI())
     output = command(bot, "paper_report", "/paper_report")
-    assert "Сигналы/наблюдения 1" in output
+    assert "Сигналы/наблюдения 0" in output  # Manual observation is outside Research.
     assert "API SQLite: диагностика недоступна" in output
 
 

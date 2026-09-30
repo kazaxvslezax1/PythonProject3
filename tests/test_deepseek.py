@@ -1,5 +1,7 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 
 import httpx
 import pytest
@@ -68,6 +70,21 @@ def analyzer(tmp_path, snapshot, handler, **kwargs):
         transport=httpx.MockTransport(lambda req: attach_facts(handler(req), req)),
         **kwargs,
     )
+
+
+def test_budget_reservation_is_atomic_across_independent_stores(tmp_path):
+    first = AnalysisStore(tmp_path / "shared-ai.db")
+    second = AnalysisStore(tmp_path / "shared-ai.db")
+    gate = Barrier(2)
+
+    def reserve(store):
+        gate.wait()
+        return store.reserve("2026-09-30", 0.6, 1.0)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(reserve, (first, second)))
+    assert sorted(results) == [False, True]
+    assert first.spent("2026-09-30") == pytest.approx(0.6)
 
 
 @pytest.mark.asyncio

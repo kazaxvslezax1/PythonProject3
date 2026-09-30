@@ -696,7 +696,7 @@ def test_v1_journal_migrates_without_losing_observations(snapshot, tmp_path):
     reopened = PaperJournal(journal.path)
     assert reopened.report()["signals"] == 1
     with sqlite3.connect(journal.path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
         assert db.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 1
 
 

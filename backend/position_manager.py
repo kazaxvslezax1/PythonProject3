@@ -100,11 +100,15 @@ class AutoTradeManager:
             ).hexdigest()[:16],
         }
 
-    def record_skipped_signal(self, chat_id, reason, signal_id=None, symbol=None):
+    def record_skipped_signal(
+        self, chat_id, reason, signal_id=None, symbol=None, execution_source=None, experiment_id=None
+    ):
         if self.journal:
             context = self.portfolio_snapshot()
             if symbol:
                 context["symbol"] = symbol
+            context["execution_source"] = execution_source or "UNKNOWN_LEGACY"
+            context["experiment_id"] = experiment_id
             self.journal.record_attempt(signal_id, chat_id, "REJECTED", reason, context)
 
     def create_auto_trade(
@@ -119,6 +123,9 @@ class AutoTradeManager:
         volume_ratio=1.0,
         signal_id=None,
         timeframe=None,
+        execution_source="MANUAL_TELEGRAM",
+        experiment_id=None,
+        strategy_version=None,
     ):
         """Создает автоматическую сделку с проверками"""
         try:
@@ -128,7 +135,15 @@ class AutoTradeManager:
             def reject(reason):
                 if self.journal:
                     self.journal.record_attempt(
-                        signal_id, chat_id, "REJECTED", reason, self.portfolio_snapshot()
+                        signal_id,
+                        chat_id,
+                        "REJECTED",
+                        reason,
+                        {
+                            **self.portfolio_snapshot(),
+                            "execution_source": execution_source,
+                            "experiment_id": experiment_id,
+                        },
                     )
                 return None
 
@@ -175,9 +190,18 @@ class AutoTradeManager:
             if plan.rr < 2 or abs(plan.entry - plan.stop_loss) / plan.entry > 0.10:
                 return reject("MOVED_PLAN_RISK_LIMIT")
             quantity = rules.quantity(self.paper_notional, plan.entry)
+            attempt_id = None
             if self.journal:
-                self.journal.record_attempt(
-                    signal_id, chat_id, "PENDING", "PAPER_ENTRY_PENDING", self.portfolio_snapshot()
+                attempt_id = self.journal.record_attempt(
+                    signal_id,
+                    chat_id,
+                    "PENDING",
+                    "PAPER_ENTRY_PENDING",
+                    {
+                        **self.portfolio_snapshot(),
+                        "execution_source": execution_source,
+                        "experiment_id": experiment_id,
+                    },
                 )
             entry_price, stop_loss, take_profits = plan.entry, plan.stop_loss, plan.take_profits
             position_id = f"{symbol}_{uuid.uuid4().hex}"
@@ -196,6 +220,11 @@ class AutoTradeManager:
                 "entry_quote_price": current_price,
                 "requested_entry_price": requested_entry,
                 "signal_id": signal_id,
+                "observation_id": signal_id,
+                "entry_attempt_id": attempt_id,
+                "experiment_id": experiment_id,
+                "strategy_version": strategy_version,
+                "execution_source": execution_source,
                 "timeframe": timeframe,
                 "chat_id": chat_id,
                 "created_at": datetime.now(),
@@ -220,7 +249,10 @@ class AutoTradeManager:
             if not self.monitoring_active:
                 self.start_monitoring()
 
-            print(f"✅ Создана авто-сделка {symbol}: AI {ai_confidence}/10, объемы {volume_ratio}x")
+            print(
+                f"✅ Создана PAPER-сделка {symbol}: техническое качество "
+                f"{ai_confidence:.2f}/10, относительный объём {volume_ratio:.2f}x"
+            )
 
             # Отправляем уведомление о создании сделки
             try:
@@ -231,7 +263,8 @@ class AutoTradeManager:
                     f"💰 Вход: {format_price(entry_price)}\n"
                     f"🎯 Цели: {', '.join([format_price(tp) for tp in take_profits])}\n"
                     f"🛑 Стоп: {format_price(stop_loss)}\n\n"
-                    f"🤖 AI: {ai_confidence}/10 📊 Объемы: {volume_ratio}x",
+                    f"📊 Техническое качество: {ai_confidence:.2f}/10; "
+                    f"относительный объём: {volume_ratio:.2f}x; только PAPER",
                 )
             except Exception:
                 pass
@@ -727,4 +760,5 @@ class SmartTakeProfitAdapter:
             data["volume_ratio"],
             signal_id=signal_id,
             timeframe=data["timeframe"],
+            execution_source="MANUAL_TELEGRAM_SMART_TP",
         )

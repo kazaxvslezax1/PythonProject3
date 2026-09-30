@@ -75,7 +75,7 @@ class PaperJournal:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 2:
+            if version > 3:
                 raise ValueError("Paper journal schema is newer than this code")
             if version == 0:
                 db.executescript("""
@@ -161,6 +161,18 @@ class PaperJournal:
                         symbol TEXT, timeframe TEXT);
                     PRAGMA user_version=2;
                 """)
+            if version < 3:
+                existing_columns = {row["name"] for row in db.execute("PRAGMA table_info(paper_positions)")}
+                for column in (
+                    "experiment_id TEXT",
+                    "strategy_version TEXT",
+                    "observation_id TEXT",
+                    "entry_attempt_id TEXT",
+                    "execution_source TEXT",
+                ):
+                    if column.split()[0] not in existing_columns:
+                        db.execute(f"ALTER TABLE paper_positions ADD COLUMN {column}")
+                db.execute("PRAGMA user_version=3")
             self.started_at = db.execute("SELECT value FROM journal_meta WHERE key='created_at'").fetchone()[
                 0
             ]
@@ -521,11 +533,21 @@ class PaperJournal:
                     (pid,),
                 ).fetchone()
                 db.execute(
-                    "INSERT INTO paper_positions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                    "INSERT INTO paper_positions (id, signal_id, symbol, timeframe, direction, "
+                    "opened_at, closed_at, status, notional, quantity, entry, entry_quote, "
+                    "stop_loss, targets_json, close_reason, realized_pct, source, "
+                    "first_recorded, last_recorded, experiment_id, strategy_version, "
+                    "observation_id, entry_attempt_id, execution_source) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                     "ON CONFLICT(id) DO UPDATE SET closed_at=excluded.closed_at, "
                     "status=excluded.status, stop_loss=excluded.stop_loss, "
                     "close_reason=excluded.close_reason, realized_pct=excluded.realized_pct, "
-                    "last_recorded=excluded.last_recorded",
+                    "last_recorded=excluded.last_recorded, "
+                    "experiment_id=COALESCE(paper_positions.experiment_id, excluded.experiment_id), "
+                    "strategy_version=COALESCE(paper_positions.strategy_version, excluded.strategy_version), "
+                    "observation_id=COALESCE(paper_positions.observation_id, excluded.observation_id), "
+                    "entry_attempt_id=COALESCE(paper_positions.entry_attempt_id, excluded.entry_attempt_id), "
+                    "execution_source=COALESCE(paper_positions.execution_source, excluded.execution_source)",
                     (
                         pid,
                         p.get("signal_id"),
@@ -546,6 +568,11 @@ class PaperJournal:
                         source,
                         observed,
                         observed,
+                        p.get("experiment_id"),
+                        p.get("strategy_version"),
+                        p.get("observation_id"),
+                        p.get("entry_attempt_id"),
+                        p.get("execution_source"),
                     ),
                 )
                 if not existed:
@@ -734,40 +761,111 @@ class PaperJournal:
             pnl += quantity * fraction * (side * (exit_price - entry) - exit_price * fee_rate)
         return pnl
 
-    def report(self):
+    def report(self, experiment_id=None):
         with self.connect() as db:
             observations = db.execute("SELECT * FROM observations ORDER BY first_seen").fetchall()
             attempts = db.execute("SELECT * FROM entry_attempts").fetchall()
-            positions = db.execute(
-                "SELECT * FROM paper_positions WHERE source='PROSPECTIVE' ORDER BY closed_at, opened_at"
+            research_rows = db.execute(
+                "SELECT signal_id, experiment_id, origin FROM research_observations"
             ).fetchall()
+            research = {row["signal_id"]: row for row in research_rows}
+            execution = {
+                row["signal_id"]: row
+                for row in db.execute("SELECT signal_id, status, reason FROM research_execution")
+            }
+            all_positions = [
+                dict(row)
+                for row in db.execute(
+                    "SELECT * FROM paper_positions WHERE source='PROSPECTIVE' ORDER BY closed_at, opened_at"
+                )
+            ]
+            for position in all_positions:
+                linked = research.get(position["signal_id"])
+                outcome = execution.get(position["signal_id"])
+                verified_bridge = (
+                    position["execution_source"] is None
+                    and linked is not None
+                    and linked["origin"] == "LIVE"
+                    and outcome is not None
+                    and outcome["status"] == "OPEN"
+                    and outcome["reason"] in ("PAPER_MANAGER_OPENED", "PAPER_POSITION_RESTORED")
+                )
+                position["attributed_experiment_id"] = position["experiment_id"] or (
+                    linked["experiment_id"] if verified_bridge else None
+                )
+                position["attributed_execution_source"] = position["execution_source"] or (
+                    "PAPER_RESEARCH_BRIDGE" if verified_bridge else "UNKNOWN_LEGACY"
+                )
+            positions = (
+                [
+                    p
+                    for p in all_positions
+                    if p["attributed_experiment_id"] == experiment_id
+                    and p["attributed_execution_source"] == "PAPER_RESEARCH_BRIDGE"
+                ]
+                if experiment_id
+                else all_positions
+            )
+            if experiment_id:
+                observations = [
+                    row
+                    for row in observations
+                    if research.get(row["id"]) and research[row["id"]]["experiment_id"] == experiment_id
+                ]
+                attempts = [
+                    row
+                    for row in attempts
+                    if research.get(row["signal_id"])
+                    and research[row["signal_id"]]["experiment_id"] == experiment_id
+                    and (
+                        json.loads(row["portfolio_json"]).get("execution_source")
+                        in (None, "PAPER_RESEARCH_BRIDGE")
+                    )
+                ]
+            position_ids = {position["id"] for position in positions}
+            observation_ids = {observation["id"] for observation in observations}
             all_active = db.execute("SELECT notional FROM paper_positions WHERE status='ACTIVE'").fetchall()
             ai_retries = [
                 json.loads(row["payload_json"])
-                for row in db.execute("SELECT payload_json FROM journal_events WHERE kind='AI_RETRY'")
+                for row in db.execute(
+                    "SELECT signal_id, payload_json FROM journal_events WHERE kind='AI_RETRY'"
+                )
+                if not experiment_id or row["signal_id"] in observation_ids
             ]
             marks = [
                 json.loads(row["payload_json"])
                 for row in db.execute(
-                    "SELECT e.payload_json FROM journal_events e JOIN paper_positions p "
+                    "SELECT e.position_id, e.payload_json FROM journal_events e JOIN paper_positions p "
                     "ON p.id=e.position_id WHERE e.kind='POSITION_MARK' AND p.source='PROSPECTIVE'"
                 )
+                if row["position_id"] in position_ids
             ]
             fills = {}
             for fill in db.execute("SELECT * FROM paper_fills ORDER BY position_id, ordinal"):
-                fills.setdefault(fill["position_id"], []).append(fill)
+                if fill["position_id"] in position_ids:
+                    fills.setdefault(fill["position_id"], []).append(fill)
             research_origins = {
                 row["origin"]: row["n"]
                 for row in db.execute(
-                    "SELECT origin, COUNT(*) AS n FROM research_observations GROUP BY origin"
+                    "SELECT origin, COUNT(*) AS n FROM research_observations "
+                    "WHERE (? IS NULL OR experiment_id=?) GROUP BY origin",
+                    (experiment_id, experiment_id),
                 )
             }
             research_outcomes = {
                 row["status"]: row["n"]
-                for row in db.execute("SELECT status, COUNT(*) AS n FROM research_outcomes GROUP BY status")
+                for row in db.execute(
+                    "SELECT u.status, COUNT(*) AS n FROM research_outcomes u "
+                    "JOIN research_observations r ON r.signal_id=u.signal_id "
+                    "WHERE (? IS NULL OR r.experiment_id=?) GROUP BY u.status",
+                    (experiment_id, experiment_id),
+                )
             }
             ai_not_requested = db.execute(
-                "SELECT COUNT(*) FROM research_ai_requests WHERE state='SKIPPED'"
+                "SELECT COUNT(*) FROM research_ai_requests a "
+                "JOIN research_observations r ON r.signal_id=a.signal_id "
+                "WHERE a.state='SKIPPED' AND (? IS NULL OR r.experiment_id=?)",
+                (experiment_id, experiment_id),
             ).fetchone()[0]
         realized = 0.0
         peak = self.costs["capital_usd"]
@@ -853,6 +951,11 @@ class PaperJournal:
                 "note": "unknown if legacy notional missing; otherwise conservative, without partial releases",
             },
             "paper_positions": len(positions),
+            "experiment_id": experiment_id,
+            "outside_experiment_positions": len(all_positions) - len(positions) if experiment_id else 0,
+            "unattributed_legacy_positions": sum(
+                position["attributed_execution_source"] == "UNKNOWN_LEGACY" for position in all_positions
+            ),
             "closed_positions": sum(p["status"] == "CLOSED" for p in positions),
             "net_pnl_usd_closed": realized,
             "realized_max_drawdown_pct": worst,

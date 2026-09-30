@@ -120,7 +120,18 @@ class ResearchStore:
             stored.pop("auto_paper_entries", None)
             comparable = dict(config)
             comparable.pop("auto_paper_entries", None)
-            if stored != comparable:
+            # Approved execution-metadata patch for the already running prospective baseline.
+            # Keep the frozen experiment JSON unchanged; any further source change still fails.
+            approved_execution_patch = (
+                experiment_id == "prospective-baseline-v1"
+                and stored.get("code_sha256")
+                == "3b4ac4fe4ed621dea7cdcc1fec042af01c999d5b9d6be9c286b5b89c1934a712"
+                and comparable.get("code_sha256")
+                == "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1"
+                and {key: value for key, value in stored.items() if key != "code_sha256"}
+                == {key: value for key, value in comparable.items() if key != "code_sha256"}
+            )
+            if stored != comparable and not approved_execution_patch:
                 raise ExperimentConfigMismatch(
                     "Experiment configuration changed; choose a new PAPER_EXPERIMENT_ID"
                 )

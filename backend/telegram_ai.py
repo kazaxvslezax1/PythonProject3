@@ -259,6 +259,40 @@ def register_ai_handlers(
         except Exception:
             send(message, "PAPER scanner: статус API недоступен; проверьте запуск API.")
 
+    def bridge_status_command(message):
+        if not authorized(message):
+            return
+        import telegram_handlers as handlers
+        from paper_journal import journal_path
+
+        bridge = getattr(handlers, "paper_execution_bridge", None)
+        legacy = handlers.auto_trading_scanner.status()
+        if bridge is None:
+            send(
+                message,
+                "PAPER bridge: enabled=False; running=False; healthy=не применимо\n"
+                f"Experiment: {os.environ.get('PAPER_EXPERIMENT_ID', 'paper-baseline-v1')}; "
+                f"SQLite: {journal_path()}\n"
+                f"Legacy Telegram scanner: enabled={legacy['enabled']}; "
+                f"running={legacy['running']}; last_scan={legacy['last_scan_at']}; "
+                "source=LEGACY_TELEGRAM_SCANNER; PAPER-only",
+            )
+            return
+        status = bridge.status()
+        send(
+            message,
+            f"PAPER bridge: enabled={status['enabled']}; running={status['running']}; "
+            f"healthy={status['healthy']}\n"
+            f"Experiment: {status['experiment_id']}; SQLite: {status['journal_path']}\n"
+            f"Last successful cycle: {status['last_successful_cycle']}; "
+            f"last claimed observation: {status['last_claimed_observation']}; "
+            f"last result: {status['last_execution_result']}; "
+            f"next poll ≈ {status['next_poll_at']}; last error: {status['last_error']}\n"
+            f"Legacy Telegram scanner: enabled={legacy['enabled']}; "
+            f"running={legacy['running']}; last_scan={legacy['last_scan_at']}; "
+            "source=LEGACY_TELEGRAM_SCANNER; PAPER-only",
+        )
+
     def paper_errors_command(message):
         if not authorized(message):
             return
@@ -290,9 +324,13 @@ def register_ai_handlers(
         try:
             local_path = journal_path()
             local_existed = local_path.is_file()
-            r = PaperJournal().report()
+            experiment_id = os.environ.get("PAPER_EXPERIMENT_ID", "paper-baseline-v1")
+            r = PaperJournal().report(experiment_id=experiment_id)
             lines = [
                 f"PAPER-журнал: {r['period_start']} — {r['period_end']}",
+                f"Research experiment: {experiment_id}; вне эксперимента PAPER-позиций "
+                f"{r['outside_experiment_positions']} "
+                f"(без подтверждённого источника: {r['unattributed_legacy_positions']})",
                 f"Telegram SQLite: {local_path}; существует={local_existed or local_path.is_file()}",
                 f"Сигналы/наблюдения {r['signals']} (LONG {r['signal_directions']['LONG']}, "
                 f"SHORT {r['signal_directions']['SHORT']}, HOLD {r['hold']}); "
@@ -320,12 +358,10 @@ def register_ai_handlers(
                 )
                 if api.path != str(local_path):
                     lines.append("ВНИМАНИЕ: API и Telegram читают разные PAPER-журналы.")
-                elif (api.signals, api.ai_ok, api.paired_ai_observations) != (
-                    r["signals"],
-                    r["ai_ok"],
-                    r["paired_ai_observations"],
-                ):
-                    lines.append("ВНИМАНИЕ: счётчики API и Telegram различаются; повторите отчёт.")
+                else:
+                    lines.append(
+                        "API-счётчики охватывают весь журнал; Research-отчёт ограничен experiment ID."
+                    )
             except Exception:
                 lines.append("API SQLite: диагностика недоступна; путь и счётчики сервера неизвестны.")
             if message.text.split()[0].split("@")[0] == "/paper_report":
@@ -404,6 +440,7 @@ def register_ai_handlers(
     bot.message_handler(commands=["ai_status"])(status_command)
     bot.message_handler(commands=["ai_performance"])(performance_command)
     bot.message_handler(commands=["paper_scanner_status"])(scanner_status_command)
+    bot.message_handler(commands=["paper_bridge_status"])(bridge_status_command)
     bot.message_handler(commands=["paper_errors"])(paper_errors_command)
     bot.message_handler(commands=["paper_journal", "paper_report"])(paper_command)
     bot.message_handler(commands=["paper_export"])(paper_export_command)

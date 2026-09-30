@@ -150,6 +150,13 @@ def log_telegram_error(operation, exc, token=""):
 class SafeTelegramErrors:
     def handle(self, exc):
         log_telegram_error("polling", exc)
+        from requests.exceptions import ConnectionError, Timeout
+
+        if isinstance(exc, (ConnectionError, Timeout)):
+            logging.getLogger(__name__).warning(
+                "Telegram polling recoverable network error type=%s; retry delegated to pyTelegramBotAPI",
+                type(exc).__name__,
+            )
         return False  # Preserve library retry/backoff behavior.
 
 

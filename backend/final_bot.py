@@ -36,6 +36,7 @@ def main():
         bridge = bridge_from_env(handlers.auto_trade_manager, allowed)
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
+    handlers.paper_execution_bridge = bridge
     if bridge is not None:
         bridge.start()
     logging.getLogger(__name__).info("Paper-only bot starting; research scanner is API-owned")

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from requests.exceptions import ReadTimeout
 from telegram_runtime import (
     SafeTelegramErrors,
     TelegramLogFilter,
@@ -71,6 +72,14 @@ def test_polling_error_handler_preserves_backoff(caplog, monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "private-token")
     assert SafeTelegramErrors().handle(TimeoutError("private-token")) is False
     assert "TimeoutError" in caplog.text
+    assert "private-token" not in caplog.text
+
+
+def test_recoverable_telegram_read_timeout_is_logged_without_token(caplog, monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "private-token")
+    with caplog.at_level(logging.WARNING):
+        assert SafeTelegramErrors().handle(ReadTimeout("private-token")) is False
+    assert "retry delegated to pyTelegramBotAPI" in caplog.text
     assert "private-token" not in caplog.text
 
 

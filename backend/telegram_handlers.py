@@ -6883,7 +6883,7 @@ def activate_all_systems_command(message):
             if result:
                 results.append("✅ 🤖 Авто-трейдинг запущен! (каждые 15 минут)")
             else:
-                results.append("❌ Авто-трейдинг: ошибка запуска")
+                results.append("⛔ Legacy авто-трейдинг не запущен: активированы Research PAPER-входы")
         except Exception as e:
             results.append(f"❌ Авто-трейдинг: {e}")
         # 🔼 🔼 🔼 КОНЕЦ ДОБАВЛЕНИЯ АВТО-ТРЕЙДИНГА 🔼 🔼 🔼
@@ -6945,6 +6945,8 @@ def deactivate_all_systems_command(message):
     """Остановка ВСЕХ систем"""
     try:
         results = []
+        auto_trading_scanner.stop_auto_trading()
+        results.append("⏹️ Legacy Telegram auto-trading остановлен (API Research не затронут)")
 
         # ОСТАНАВЛИВАЕМ ВСЕ СИСТЕМЫ
         systems_to_stop = [
@@ -6960,6 +6962,13 @@ def deactivate_all_systems_command(message):
 
         for system_name, stop_method, display_name in systems_to_stop:
             try:
+                if (
+                    system_name == 'takeprofit_manager'
+                    and os.environ.get('PAPER_SCANNER_AUTO_PAPER_ENTRIES', 'false').lower()
+                    in ('true', '1')
+                ):
+                    results.append('⏭️ PAPER-мониторинг Research-позиций продолжает работать')
+                    continue
                 if system_name in globals():
                     system_obj = globals()[system_name]
                     if hasattr(system_obj, stop_method):
@@ -9674,10 +9683,13 @@ def create_auto_trade_from_button(chat_id, symbol, message_id):
     if not analysis or not auto_trading_scanner._is_good_signal(analysis):
         if analysis:
             auto_trade_manager.record_skipped_signal(
-                chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol)
+                chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol,
+                execution_source="MANUAL_TELEGRAM")
         bot.edit_message_text('HOLD: сигнал или независимые фильтры не пройдены',chat_id=chat_id,message_id=message_id)
         return
-    pid=auto_trading_scanner._create_auto_trade(chat_id,symbol,analysis)
+    pid=auto_trading_scanner._create_auto_trade(
+        chat_id, symbol, analysis, execution_source="MANUAL_TELEGRAM"
+    )
     bot.edit_message_text('PAPER: '+(pid or 'вход отклонён'),chat_id=chat_id,message_id=message_id)
 
 
@@ -9999,11 +10011,34 @@ class AutoTradingScanner:
         self.scanning_active = False
         self.scanning_thread = None
         self.scan_interval = 900  # 15 минут
+        self._stop = threading.Event()
+        self._entry_lock = threading.Lock()
+        self.last_scan_at = None
+
+    def status(self):
+        enabled = os.environ.get("PAPER_SCANNER_AUTO_PAPER_ENTRIES", "false").lower() not in (
+            "true", "1"
+        )
+        return {
+            "enabled": enabled,
+            "running": self.scanning_active and bool(
+                self.scanning_thread and self.scanning_thread.is_alive()
+            ),
+            "last_scan_at": self.last_scan_at,
+            "execution_source": "LEGACY_TELEGRAM_SCANNER",
+            "mode": "PAPER_ONLY",
+        }
 
     def start_auto_trading(self, chat_id):
         """Запускает авто-трейдинг для пользователя"""
         try:
+            if not self.status()["enabled"]:
+                if self.scanning_active:
+                    self.stop_auto_trading()
+                print("⛔ Legacy Telegram scanner blocked while Research PAPER entries are enabled")
+                return False
             if not self.scanning_active:
+                self._stop.clear()
                 self.scanning_active = True
                 self.scanning_thread = threading.Thread(
                     target=self._scanning_loop,
@@ -10021,23 +10056,32 @@ class AutoTradingScanner:
 
     def stop_auto_trading(self):
         """Останавливает авто-трейдинг"""
-        self.scanning_active = False
+        with self._entry_lock:
+            self.scanning_active = False
+            self._stop.set()
         print("⏹️ Авто-трейдинг остановлен")
 
     def _scanning_loop(self, chat_id):
         """Основной цикл сканирования"""
         while self.scanning_active:
             try:
+                if not self.status()["enabled"]:
+                    self.stop_auto_trading()
+                    break
                 self._scan_market(chat_id)
-                time.sleep(self.scan_interval)
+                self._stop.wait(self.scan_interval)
 
             except Exception as e:
                 print(f"❌ Ошибка в цикле сканирования: {e}")
-                time.sleep(60)
+                self._stop.wait(60)
 
     def _scan_market(self, chat_id):
         """Сканирует рынок и создает сделки"""
         try:
+            if not self.status()["enabled"]:
+                self.stop_auto_trading()
+                return
+            self.last_scan_at = datetime.now().astimezone().isoformat()
             # Сканируем топ-8 монет (можно увеличить)
             symbols_to_scan = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT",
                                "XRPUSDT", "ADAUSDT", "AVAXUSDT", "DOTUSDT"]
@@ -10050,16 +10094,21 @@ class AutoTradingScanner:
                     # Проверяем лимиты перед сканированием
                     can_trade, reason = self.auto_trade_manager.can_create_auto_trade(chat_id, symbol)
                     if not can_trade:
-                        self.auto_trade_manager.record_skipped_signal(chat_id, 'SCANNER_PRECHECK_REJECTED', symbol=symbol)
+                        self.auto_trade_manager.record_skipped_signal(
+                            chat_id, 'SCANNER_PRECHECK_REJECTED', symbol=symbol,
+                            execution_source="LEGACY_TELEGRAM_SCANNER")
                         continue
 
                     # Получаем анализ символа (упрощенная версия)
                     analysis = self._analyze_symbol(symbol)
+                    if not self.scanning_active or not self.status()["enabled"]:
+                        break
                     if analysis and self._is_good_signal(analysis):
                         self._create_auto_trade(chat_id, symbol, analysis)
                     elif analysis:
                         self.auto_trade_manager.record_skipped_signal(
-                            chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol)
+                            chat_id, 'SCANNER_QUALITY_VOLUME_FILTER', analysis.get('signal_id'), symbol,
+                            execution_source="LEGACY_TELEGRAM_SCANNER")
 
                     # Пауза между символами
                     time.sleep(2)
@@ -10127,11 +10176,22 @@ class AutoTradingScanner:
 
         return [tp1, tp2, tp3]
 
-    def _create_auto_trade(self, chat_id, symbol, analysis):
+    def _create_auto_trade(
+        self, chat_id, symbol, analysis, execution_source="LEGACY_TELEGRAM_SCANNER"
+    ):
+        if execution_source == "LEGACY_TELEGRAM_SCANNER":
+            with self._entry_lock:
+                if not self.scanning_active or not self.status()["enabled"]:
+                    return None
+                return self._submit_paper_trade(chat_id, symbol, analysis, execution_source)
+        return self._submit_paper_trade(chat_id, symbol, analysis, execution_source)
+
+    def _submit_paper_trade(self, chat_id, symbol, analysis, execution_source):
         return self.auto_trade_manager.create_auto_trade(chat_id,symbol,analysis['entry_price'],
             analysis['stop_loss'],analysis['take_profits'],analysis['direction'],
             analysis['ai_confidence'],analysis['volume_ratio'],
-            signal_id=analysis.get('signal_id'), timeframe=analysis.get('timeframe'))
+            signal_id=analysis.get('signal_id'), timeframe=analysis.get('timeframe'),
+            execution_source=execution_source)
 # Создаем глобальный экземпляр авто-трейдинга
 auto_trading_scanner = AutoTradingScanner(bot, auto_trade_manager)
 # 🔼 🔼 🔼 КОНЕЦ СИСТЕМЫ АВТО-ТРЕЙДИНГА 🔼 🔼 🔼
