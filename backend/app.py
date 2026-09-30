@@ -15,7 +15,7 @@ async def lifespan(application):
     application.state.paper_scanner = None
     application.state.paper_scanner_error = None
     try:
-        from paper_scanner import ResearchScanner, ScannerConfig
+        from paper_scanner import ResearchScanner, ScannerConfig, safe_scanner_reason
 
         config = ScannerConfig.from_env()
         if config.enabled:
@@ -24,8 +24,13 @@ async def lifespan(application):
             task = asyncio.create_task(scanner.run(), name="paper-research-scanner")
             logger.info("PAPER research scanner started experiment=%s", config.experiment_id)
     except Exception as exc:
-        application.state.paper_scanner_error = type(exc).__name__
-        logger.error("PAPER research scanner initialization failed type=%s", type(exc).__name__)
+        reason = safe_scanner_reason(exc) if "safe_scanner_reason" in locals() else "SCANNER_STARTUP_FAILED"
+        application.state.paper_scanner_error = reason
+        logger.error(
+            "PAPER research scanner initialization failed type=%s reason=%s",
+            type(exc).__name__,
+            reason,
+        )
     try:
         yield
     finally:
@@ -121,14 +126,17 @@ def paper_scanner_status(request: Request):
     try:
         config = ScannerConfig.from_env()
         enabled, experiment_id = config.enabled, config.experiment_id
+        auto_paper_entries = config.auto_paper_entries
         symbols, timeframes = list(config.symbols), list(config.timeframes)
     except Exception:
         enabled, experiment_id = False, None
+        auto_paper_entries = False
         symbols, timeframes = [], []
     return {
         "enabled": enabled,
         "running": False,
         "healthy": False,
+        "auto_paper_entries": auto_paper_entries,
         "experiment_id": experiment_id,
         "strategy_version": "technical-v1",
         "symbols": symbols,

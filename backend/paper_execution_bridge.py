@@ -39,7 +39,7 @@ class PaperExecutionBridge:
 
     def process_once(self):
         experiment = self.store.experiment_config(self.experiment_id)
-        if experiment is None or not experiment.get("auto_paper_entries"):
+        if experiment is None or self.store.current_operation_mode(self.experiment_id) is not True:
             return 0
         self.recover_claimed()
         processed = 0

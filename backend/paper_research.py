@@ -3,10 +3,16 @@
 import json
 from datetime import datetime, timezone
 
-from paper_journal import as_utc, compact, now_utc
+from paper_journal import as_utc, compact, now_utc, uid
 
 REGIME_VERSION = "regime-v1"
 OUTCOME_VERSION = "ohlcv-first-touch-v1"
+
+
+class ExperimentConfigMismatch(ValueError):
+    """An immutable research parameter changed for an existing experiment."""
+
+    reason_code = "EXPERIMENT_CONFIG_MISMATCH"
 
 
 def quality_bucket(score):
@@ -108,9 +114,78 @@ class ResearchStore:
                     (experiment_id,),
                 )
                 return started
-            if json.loads(row["config_json"]) != config:
-                raise ValueError("Experiment configuration changed; choose a new PAPER_EXPERIMENT_ID")
+            stored = json.loads(row["config_json"])
+            # v2 journals froze this operational switch with research parameters.
+            # Preserve the stored JSON while allowing a recorded PAPER entry-mode change.
+            stored.pop("auto_paper_entries", None)
+            comparable = dict(config)
+            comparable.pop("auto_paper_entries", None)
+            if stored != comparable:
+                raise ExperimentConfigMismatch(
+                    "Experiment configuration changed; choose a new PAPER_EXPERIMENT_ID"
+                )
             return row["started_at"]
+
+    def record_operation_mode(self, experiment_id, auto_paper_entries):
+        """Audit an opt-in execution switch without rewriting the frozen experiment."""
+        with self.journal.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            experiment = db.execute(
+                "SELECT config_json FROM research_experiments WHERE id=?", (experiment_id,)
+            ).fetchone()
+            if experiment is None:
+                raise ValueError("Research experiment is not registered")
+            previous = db.execute(
+                "SELECT payload_json FROM journal_events WHERE kind='RESEARCH_OPERATION_MODE' "
+                "AND signal_id=? ORDER BY recorded_at DESC, rowid DESC LIMIT 1",
+                (experiment_id,),
+            ).fetchone()
+            old_mode = (
+                json.loads(previous["payload_json"])["auto_paper_entries"]
+                if previous
+                else json.loads(experiment["config_json"]).get("auto_paper_entries")
+            )
+            if old_mode == auto_paper_entries:
+                return False
+            when = now_utc()
+            self.journal.event(
+                db,
+                uid(experiment_id, "RESEARCH_OPERATION_MODE", when, auto_paper_entries),
+                "RESEARCH_OPERATION_MODE",
+                when,
+                signal_id=experiment_id,
+                payload={"experiment_id": experiment_id, "auto_paper_entries": auto_paper_entries},
+            )
+            return True
+
+    def current_operation_mode(self, experiment_id):
+        with self.journal.connect() as db:
+            previous = db.execute(
+                "SELECT payload_json FROM journal_events WHERE kind='RESEARCH_OPERATION_MODE' "
+                "AND signal_id=? ORDER BY recorded_at DESC, rowid DESC LIMIT 1",
+                (experiment_id,),
+            ).fetchone()
+            if previous:
+                return json.loads(previous["payload_json"])["auto_paper_entries"]
+            experiment = db.execute(
+                "SELECT config_json FROM research_experiments WHERE id=?", (experiment_id,)
+            ).fetchone()
+        return json.loads(experiment["config_json"]).get("auto_paper_entries") if experiment else None
+
+    def operation_mode_at(self, experiment_id, observed_at):
+        """Use the mode in force when a signal was first observed, never today's switch."""
+        with self.journal.connect() as db:
+            previous = db.execute(
+                "SELECT payload_json FROM journal_events WHERE kind='RESEARCH_OPERATION_MODE' "
+                "AND signal_id=? AND recorded_at<=? ORDER BY recorded_at DESC, rowid DESC LIMIT 1",
+                (experiment_id, as_utc(observed_at)),
+            ).fetchone()
+            if previous:
+                return json.loads(previous["payload_json"])["auto_paper_entries"]
+            experiment = db.execute(
+                "SELECT config_json FROM research_experiments WHERE id=?", (experiment_id,)
+            ).fetchone()
+        return json.loads(experiment["config_json"]).get("auto_paper_entries") if experiment else None
 
     def latest_candle(self, experiment_id, symbol, timeframe):
         with self.journal.connect() as db:
@@ -215,7 +290,7 @@ class ResearchStore:
             return [
                 dict(row)
                 for row in db.execute(
-                    "SELECT o.id, o.signal_json, r.origin FROM observations o "
+                    "SELECT o.id, o.signal_json, r.origin, r.observed_at FROM observations o "
                     "JOIN research_observations r ON r.signal_id=o.id "
                     "LEFT JOIN research_execution e ON e.signal_id=o.id "
                     "WHERE r.experiment_id=? AND e.signal_id IS NULL "

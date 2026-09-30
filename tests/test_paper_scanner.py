@@ -1,16 +1,19 @@
 import asyncio
 import json
 import sqlite3
+import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import httpx
 import pytest
+import requests
 from ai_facts import FactClaim, fact_catalog, relation
 from deepseek_analyzer import AIResponse
 from fastapi.testclient import TestClient
-from paper_execution_bridge import PaperExecutionBridge
+from paper_execution_bridge import PaperExecutionBridge, bridge_from_env
 from paper_journal import PaperJournal
 from paper_research import ResearchStore, evaluate_outcome
 from paper_scanner import ResearchScanner, ScannerConfig, baseline_config, next_due
@@ -195,7 +198,15 @@ def test_binance_late_candle_retried_without_assuming_close(candles, tmp_path, m
     assert scanner.healthy and scanner.journal.report()["signals"] == 1
 
 
-@pytest.mark.parametrize("reason", ["API_TIMEOUT_OR_TRANSPORT", "AI_FACT_CHECK_FAILED", "BUDGET_EXHAUSTED"])
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "API_TIMEOUT_OR_TRANSPORT",
+        "AI_FACT_CHECK_FAILED",
+        "AI_REFERENCE_VALIDATION_FAILED",
+        "BUDGET_EXHAUSTED",
+    ],
+)
 def test_ai_failure_does_not_stop_technical_collection(candles, tmp_path, monkeypatch, reason):
     frame = candles(n=130, end="2026-09-28T10:00:00Z")
     ai = FakeAnalyzer(reason)
@@ -358,6 +369,293 @@ def test_experiment_freeze_and_new_version(tmp_path):
     with pytest.raises(ValueError, match="Experiment configuration changed"):
         store.register_experiment("baseline-a", {"strategy_version": "technical-v2"})
     assert store.register_experiment("baseline-b", {"strategy_version": "technical-v2"})
+
+
+@pytest.mark.parametrize("auto_entries", [False, True])
+def test_existing_experiment_starts_after_paper_entry_mode_change(
+    candles, tmp_path, monkeypatch, auto_entries
+):
+    frame = candles(n=130, slope=0.1, end="2026-09-28T10:00:00Z")
+    scanner = scanner_for(
+        frame,
+        tmp_path,
+        monkeypatch,
+        experiment_id="prospective-baseline-v1",
+        auto_paper_entries=False,
+    )
+    asyncio.run(scanner.scan_once())
+    before = scanner.journal.report()
+    assert before["signals"] == before["research_origins"]["LIVE"] == 1
+    # Emulate an on-disk experiment created by the previous release.
+    with sqlite3.connect(scanner.journal.path) as db:
+        row = db.execute(
+            "SELECT config_json FROM research_experiments WHERE id='prospective-baseline-v1'"
+        ).fetchone()
+        frozen = json.loads(row[0])
+        frozen["auto_paper_entries"] = False
+        db.execute(
+            "UPDATE research_experiments SET config_json=? WHERE id='prospective-baseline-v1'",
+            (json.dumps(frozen),),
+        )
+        db.execute("DELETE FROM journal_events WHERE kind='RESEARCH_OPERATION_MODE'")
+    restarted = ResearchScanner(
+        journal=scanner.journal,
+        config=replace(scanner.config, auto_paper_entries=auto_entries),
+        loader=scanner.loader,
+        analyzer=FakeAnalyzer(),
+        clock=scanner.clock,
+    )
+
+    async def check_running():
+        task = asyncio.create_task(restarted.run())
+        for _ in range(100):
+            if restarted._next_run is not None:
+                break
+            await asyncio.sleep(0.01)
+        assert restarted.running and restarted.healthy
+        assert restarted.status()["auto_paper_entries"] is auto_entries
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(check_running())
+    assert restarted.last_error is None
+    assert scanner.journal.report()["signals"] == before["signals"]
+    assert scanner.journal.report()["paper_positions"] == 0
+    assert restarted.store.current_operation_mode("prospective-baseline-v1") is auto_entries
+    assert restarted.store.experiment_config("prospective-baseline-v1")["auto_paper_entries"] is False
+
+
+def test_immutable_experiment_mismatch_still_stops_with_safe_reason(candles, tmp_path, monkeypatch, caplog):
+    frame = candles(n=130, end="2026-09-28T10:00:00Z")
+    scanner = scanner_for(frame, tmp_path, monkeypatch)
+    with sqlite3.connect(scanner.journal.path) as db:
+        db.execute(
+            "UPDATE research_experiments SET config_json=? WHERE id=?",
+            (json.dumps({"strategy_version": "different"}), scanner.config.experiment_id),
+        )
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "never-log-this-test-value")
+    asyncio.run(scanner.run())
+    assert not scanner.running and not scanner.healthy
+    assert scanner.status()["error"] == "EXPERIMENT_CONFIG_MISMATCH"
+    assert "reason=EXPERIMENT_CONFIG_MISMATCH" in caplog.text
+    assert "never-log-this-test-value" not in caplog.text
+
+
+def test_api_status_exposes_safe_background_startup_reason(monkeypatch):
+    import paper_scanner
+    from app import app
+
+    store = ResearchStore(PaperJournal())
+    store.register_experiment("paper-baseline-v1", {"strategy_version": "different"})
+    monkeypatch.setenv("PAPER_SCANNER_ENABLED", "true")
+
+    class EmptyBudget:
+        def __init__(self, path):
+            pass
+
+        def spent(self, day):
+            return 0.0
+
+    monkeypatch.setattr(paper_scanner, "AnalysisStore", EmptyBudget)
+    with TestClient(app) as client:
+        for _ in range(100):
+            status = client.get("/paper/scanner/status").json()
+            if status.get("error") == "EXPERIMENT_CONFIG_MISMATCH":
+                break
+            time.sleep(0.01)
+        assert status["enabled"] is True
+        assert status["running"] is False
+        assert status["healthy"] is False
+        assert status["error"] == "EXPERIMENT_CONFIG_MISMATCH"
+
+
+def test_fastapi_lifespan_runs_existing_experiment_with_paper_mode_true(candles, monkeypatch):
+    import paper_scanner
+    from app import app
+
+    frame = candles(n=130, slope=0.1, end="2026-09-28T10:00:00Z")
+    now = frame.close_time.iloc[-1].to_pydatetime() + timedelta(seconds=15)
+    config = ScannerConfig(
+        enabled=True,
+        auto_paper_entries=True,
+        experiment_id="prospective-baseline-v1",
+        symbols=("BTCUSDT",),
+        timeframes=("1h",),
+    )
+    monkeypatch.setenv("AI_MODE", "ADVISORY")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    legacy = baseline_config(replace(config, auto_paper_entries=False))
+    legacy["auto_paper_entries"] = False
+    journal = PaperJournal()
+    ResearchStore(journal).register_experiment(config.experiment_id, legacy, now - timedelta(hours=1))
+    monkeypatch.setattr(paper_scanner.ScannerConfig, "from_env", classmethod(lambda cls: config))
+    monkeypatch.setattr(paper_scanner, "utc_now", lambda: now)
+    monkeypatch.setattr(
+        paper_scanner,
+        "get_candles",
+        lambda symbol, timeframe, *, limit, as_of: frame.tail(limit).reset_index(drop=True),
+    )
+
+    class EmptyBudget:
+        def __init__(self, path):
+            pass
+
+        def spent(self, day):
+            return 0.0
+
+    monkeypatch.setattr(paper_scanner, "AnalysisStore", EmptyBudget)
+    with TestClient(app) as client:
+        for _ in range(100):
+            status = client.get("/paper/scanner/status").json()
+            if status.get("last_success_at"):
+                break
+            time.sleep(0.01)
+        assert status["enabled"] is True
+        assert status["running"] is True
+        assert status["healthy"] is True
+        assert status["auto_paper_entries"] is True
+        assert status["experiment_id"] == "prospective-baseline-v1"
+    assert PaperJournal().report()["signals"] == 1
+    assert (
+        ResearchStore(PaperJournal()).experiment_config(config.experiment_id)["auto_paper_entries"] is False
+    )
+
+
+def test_enabled_paper_bridge_only_handles_new_live_candle(candles, tmp_path, monkeypatch):
+    from position_manager import AutoTradeManager
+
+    first = candles(n=130, slope=0.1, end="2026-09-28T10:00:00Z")
+    scanner = scanner_for(first, tmp_path, monkeypatch, auto_paper_entries=False)
+    asyncio.run(scanner.scan_once())
+    assert scanner.journal.report()["signals"] == 1
+    second = candles(n=131, slope=0.1, end="2026-09-28T11:00:00Z")
+    now = second.close_time.iloc[-1].to_pydatetime() + timedelta(seconds=15)
+    resumed = ResearchScanner(
+        journal=scanner.journal,
+        config=replace(scanner.config, auto_paper_entries=True),
+        loader=lambda symbol, timeframe, *, limit, as_of: second.tail(limit).reset_index(drop=True),
+        analyzer=FakeAnalyzer(),
+        clock=lambda: now,
+    )
+    asyncio.run(resumed.scan_once())
+    assert resumed.healthy and resumed.journal.report()["signals"] == 2
+    with sqlite3.connect(resumed.journal.path) as db:
+        reasons = [row[0] for row in db.execute("SELECT reason FROM research_execution ORDER BY recorded_at")]
+    assert sorted(reasons) == ["PAPER_BRIDGE_PENDING", "RESEARCH_ONLY_NO_AUTOMATED_ENTRY"]
+    monkeypatch.setenv("PAPER_SCANNER_AUTO_PAPER_ENTRIES", "true")
+    monkeypatch.setenv("PAPER_SCANNER_CHAT_ID", "1")
+    manager = AutoTradeManager(Bot(), rules_loader=lambda _: paper_rules(), journal=resumed.journal)
+    manager.should_open_trade = lambda *args: (False, "Quality or volume filter rejected")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("No order or entry path may run for a rejected signal")
+
+    manager.create_auto_trade = forbidden
+    bridge = bridge_from_env(manager, {1})
+    bridge.clock = lambda: now
+    assert bridge.process_once() == 1
+    assert bridge.process_once() == 0
+    with sqlite3.connect(resumed.journal.path) as db:
+        assert db.execute("SELECT COUNT(*) FROM entry_attempts").fetchone()[0] == 1
+        assert (
+            db.execute("SELECT reason FROM entry_attempts").fetchone()[0]
+            == "Quality or volume filter rejected"
+        )
+    assert resumed.journal.report()["signals"] == 2
+    assert resumed.journal.report()["paper_positions"] == 0
+
+
+def test_crash_recovery_does_not_retroactively_enable_old_paper_entry(snapshot, tmp_path):
+    journal = PaperJournal(tmp_path / "paper.sqlite3")
+    config = ScannerConfig(enabled=True, auto_paper_entries=False)
+    scanner = ResearchScanner(journal=journal, config=config, analyzer=FakeAnalyzer())
+    scanner.initialize()
+    signal_id = journal.record_signal(
+        analysis(snapshot),
+        research={
+            "experiment_id": config.experiment_id,
+            "origin": "LIVE",
+            "data_source": "BINANCE_SPOT_KLINES",
+            "regime": {"version": "regime-v1"},
+            "quality_bucket": "4-<7",
+        },
+    )
+    observed_at = scanner.store.observation(signal_id)["first_seen"]
+    resumed = ResearchScanner(
+        journal=journal,
+        config=replace(config, auto_paper_entries=True),
+        analyzer=FakeAnalyzer(),
+    )
+    resumed.initialize()
+    assert resumed.store.current_operation_mode(config.experiment_id) is True
+    assert resumed.store.operation_mode_at(config.experiment_id, observed_at) is False
+    resumed._recover_execution_metadata()
+    with sqlite3.connect(journal.path) as db:
+        assert db.execute("SELECT reason FROM research_execution").fetchone()[0] == (
+            "RESEARCH_ONLY_NO_AUTOMATED_ENTRY"
+        )
+
+
+def test_enabled_paper_mode_never_opens_hold(candles, tmp_path, monkeypatch):
+    from position_manager import AutoTradeManager
+
+    frame = candles(n=130, slope=-0.1, end="2026-09-28T10:00:00Z")
+    scanner = scanner_for(frame, tmp_path, monkeypatch, auto_paper_entries=True)
+    asyncio.run(scanner.scan_once())
+    assert scanner.journal.report()["signal_directions"]["HOLD"] == 1
+    manager = AutoTradeManager(Bot(), rules_loader=lambda _: paper_rules(), journal=scanner.journal)
+    bridge = PaperExecutionBridge(manager, 1)
+    assert bridge.process_once() == 0
+    with sqlite3.connect(scanner.journal.path) as db:
+        assert db.execute("SELECT status FROM research_execution").fetchone()[0] == "NOT_ELIGIBLE"
+        assert db.execute("SELECT COUNT(*) FROM entry_attempts").fetchone()[0] == 0
+
+
+def test_paper_bridge_isolates_one_observation_failure(snapshot, tmp_path):
+    from position_manager import AutoTradeManager
+
+    journal = PaperJournal(tmp_path / "paper.sqlite3")
+    store = ResearchStore(journal)
+    store.register_experiment("paper-baseline-v1", {"strategy_version": "technical-v1"})
+    store.record_operation_mode("paper-baseline-v1", True)
+    ids = []
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        data = analysis(snapshot)
+        data["technical_signal"] = snapshot.technical.model_copy(update={"symbol": symbol})
+        signal_id = journal.record_signal(
+            data,
+            research={
+                "experiment_id": "paper-baseline-v1",
+                "origin": "LIVE",
+                "data_source": "BINANCE_SPOT_KLINES",
+                "regime": {"version": "regime-v1"},
+                "quality_bucket": "7-10",
+            },
+        )
+        store.record_execution(signal_id, "NOT_ATTEMPTED", "PAPER_BRIDGE_PENDING")
+        ids.append(signal_id)
+    manager = AutoTradeManager(Bot(), rules_loader=lambda _: paper_rules(), journal=journal)
+    calls = 0
+
+    def risk_check(*args):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("test-only paper risk failure")
+        return False, "Quality or volume filter rejected"
+
+    manager.should_open_trade = risk_check
+    bridge = PaperExecutionBridge(
+        manager, 1, clock=lambda: snapshot.technical.timestamp + timedelta(seconds=20)
+    )
+    assert bridge.process_once() == 2
+    assert calls == 2
+    with sqlite3.connect(journal.path) as db:
+        states = {row[0]: row[1] for row in db.execute("SELECT signal_id, status FROM research_execution")}
+    assert states[ids[0]] == "CLAIMED"
+    assert states[ids[1]] == "REJECTED"
+    assert store.errors()[0]["stage"] == "PAPER_EXECUTION"
 
 
 def test_strategy_version_and_experiment_cannot_mix_same_candle(snapshot, tmp_path):
@@ -524,7 +822,8 @@ def test_optional_paper_bridge_uses_existing_manager(snapshot, tmp_path, monkeyp
 
     journal = PaperJournal(tmp_path / "paper.sqlite3")
     store = ResearchStore(journal)
-    store.register_experiment("paper-baseline-v1", {"auto_paper_entries": True})
+    store.register_experiment("paper-baseline-v1", {"auto_paper_entries": False})
+    store.record_operation_mode("paper-baseline-v1", True)
     data = analysis(snapshot)
     data["technical_signal"] = snapshot.technical.model_copy(update={"quality": quality})
     data["indicators"] = {**data["indicators"], "Volume_Ratio": 2.0}
@@ -543,6 +842,12 @@ def test_optional_paper_bridge_uses_existing_manager(snapshot, tmp_path, monkeyp
     manager.data_path = tmp_path / "positions.json"
     monkeypatch.setattr(manager, "start_monitoring", lambda: None)
     monkeypatch.setattr(manager, "_get_current_price", lambda _: snapshot.technical.plan.entry)
+
+    def forbidden_order(*args, **kwargs):
+        raise AssertionError("Real order request is prohibited")
+
+    monkeypatch.setattr(requests, "post", forbidden_order)
+    monkeypatch.setattr(httpx.AsyncClient, "post", forbidden_order)
     bridge = PaperExecutionBridge(
         manager,
         1,
@@ -550,6 +855,12 @@ def test_optional_paper_bridge_uses_existing_manager(snapshot, tmp_path, monkeyp
     )
     assert bridge.process_once() == 1
     assert bridge.process_once() == 0
+    assert (
+        PaperExecutionBridge(
+            manager, 1, clock=lambda: snapshot.technical.timestamp + timedelta(seconds=30)
+        ).process_once()
+        == 0
+    )
     with sqlite3.connect(journal.path) as db:
         assert db.execute("SELECT status FROM research_execution").fetchone()[0] == expected
         assert db.execute("SELECT COUNT(*) FROM entry_attempts").fetchone()[0] == 1

@@ -23,6 +23,7 @@ from paper_journal import PaperJournal, cost_settings
 from paper_research import (
     OUTCOME_VERSION,
     REGIME_VERSION,
+    ExperimentConfigMismatch,
     ResearchStore,
     classify_origin,
     evaluate_outcome,
@@ -127,12 +128,23 @@ def baseline_config(config):
         "outcome_version": OUTCOME_VERSION,
         "cost_model": cost_settings(),
         "portfolio_model": "existing-paper-manager-v1",
-        "auto_paper_entries": config.auto_paper_entries,
         "ai_on_hold": config.ai_on_hold,
         "ai_max_requests": config.ai_max_requests,
         "close_delay_sec": config.close_delay_sec,
         "live_max_age_sec": config.live_max_age_sec,
     }
+
+
+def safe_scanner_reason(exc):
+    if isinstance(exc, ExperimentConfigMismatch):
+        return exc.reason_code
+    if isinstance(exc, ValueError):
+        known = {
+            "Journal cost settings changed; use a new PAPER_JOURNAL_PATH": "JOURNAL_COST_MISMATCH",
+            "Backfill exceeds configured history window": "BACKFILL_WINDOW_EXCEEDED",
+        }
+        return known.get(str(exc), "INVALID_SCANNER_CONFIGURATION")
+    return "SCANNER_STARTUP_FAILED"
 
 
 def unavailable_decision(signal, reason):
@@ -159,6 +171,7 @@ class ResearchScanner:
         self.running = False
         self.healthy = True
         self.experiment_start = None
+        self.last_error = None
         self._next_run = None
         self._checked_buckets = {}
 
@@ -169,6 +182,7 @@ class ResearchScanner:
                     self.config.experiment_id, baseline_config(self.config), self.clock()
                 )
             )
+            self.store.record_operation_mode(self.config.experiment_id, self.config.auto_paper_entries)
 
     def _analyzer(self):
         if self.analyzer is None:
@@ -317,21 +331,28 @@ class ResearchScanner:
                 self.store.error("RECOVERY", exc, row["symbol"], row["timeframe"])
                 LOGGER.warning("PAPER AI recovery failed type=%s", type(exc).__name__)
 
-    def _record_execution_metadata(self, signal_id, signal, origin):
+    def _record_execution_metadata(self, signal_id, signal, origin, auto_paper_entries=None):
+        if auto_paper_entries is None:
+            auto_paper_entries = self.config.auto_paper_entries
         self.store.record_execution(
             signal_id,
             "NOT_ELIGIBLE" if signal.plan is None else "NOT_ATTEMPTED",
             "TECHNICAL_HOLD"
             if signal.plan is None
             else "PAPER_BRIDGE_PENDING"
-            if self.config.auto_paper_entries and origin == "LIVE"
+            if auto_paper_entries and origin == "LIVE"
             else "RESEARCH_ONLY_NO_AUTOMATED_ENTRY",
         )
 
     def _recover_execution_metadata(self):
         for row in self.store.missing_execution_metadata(self.config.experiment_id):
             signal = TradingSignal.model_validate_json(row["signal_json"])
-            self._record_execution_metadata(row["id"], signal, row["origin"])
+            mode_at_observation = self.store.operation_mode_at(
+                self.config.experiment_id, row["observed_at"]
+            )
+            self._record_execution_metadata(
+                row["id"], signal, row["origin"], auto_paper_entries=bool(mode_at_observation)
+            )
 
     def _outcomes(self, symbol, timeframe, frame):
         for row in self.store.outcomes_due(self.config.experiment_id, symbol, timeframe):
@@ -457,7 +478,8 @@ class ResearchScanner:
             raise
         except Exception as exc:
             self.healthy = False
-            LOGGER.error("PAPER scanner stopped type=%s", type(exc).__name__)
+            self.last_error = safe_scanner_reason(exc)
+            LOGGER.error("PAPER scanner stopped type=%s reason=%s", type(exc).__name__, self.last_error)
             try:
                 self.store.error("WORKER", exc)
                 self.store.heartbeat(self.config.experiment_id, healthy=False)
@@ -479,7 +501,10 @@ class ResearchScanner:
         if self.experiment_start is not None:
             result.update(self.store.status(self.config.experiment_id))
         else:
-            result.update({"healthy": False, "error": "NOT_STARTED"})
+            result.update({"healthy": False, "error": self.last_error or "NOT_STARTED"})
+        result["auto_paper_entries"] = self.config.auto_paper_entries
+        if self.last_error:
+            result["error"] = self.last_error
         if self.analyzer is not None:
             spent = self.analyzer.store.spent(self.clock().date().isoformat())
             result["budget_used_usd"] = spent

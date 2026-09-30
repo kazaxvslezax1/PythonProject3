@@ -42,6 +42,7 @@ class ScannerStatus(BaseModel):
     enabled: bool
     running: bool
     healthy: bool
+    auto_paper_entries: bool = False
     experiment_id: str | None = None
     strategy_version: str
     symbols: list[str]
@@ -240,7 +241,8 @@ def register_ai_handlers(
             send(
                 message,
                 "PAPER Research: "
-                f"enabled={status.enabled}; running={status.running}; healthy={status.healthy}\n"
+                f"enabled={status.enabled}; running={status.running}; healthy={status.healthy}; "
+                f"auto PAPER entries={status.auto_paper_entries}\n"
                 f"Experiment {status.experiment_id}; strategy {status.strategy_version}\n"
                 f"Пары: {', '.join(status.symbols)}; TF: {', '.join(status.timeframes)}\n"
                 f"Последний успешный scan: {status.last_success_at}; "
