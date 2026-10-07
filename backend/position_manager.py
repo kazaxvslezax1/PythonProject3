@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
+from entry_prefilter import MIN_ENTRY_QUALITY, MIN_ENTRY_VOLUME_RATIO, evaluate_entry_prefilter
 
 
 def format_price(value):
@@ -38,8 +39,8 @@ class AutoTradeManager:
         # 🔽 🔽 🔽 ДОБАВЛЯЕМ НОВЫЕ НАСТРОЙКИ 🔽 🔽 🔽
         self.trading_config = {
             # 🎯 ФИЛЬТРЫ КАЧЕСТВА:
-            "MIN_AI_CONFIDENCE": 7.0,  # Только высокие уверенности
-            "MIN_VOLUME_RATIO": 1.5,  # Хорошие объемы!!!!!!!!!!!!!!!!
+            "MIN_AI_CONFIDENCE": MIN_ENTRY_QUALITY,  # Техническое качество PAPER-сигнала
+            "MIN_VOLUME_RATIO": MIN_ENTRY_VOLUME_RATIO,
             # 📊 ЛИМИТЫ АКТИВНОСТИ:
             "MAX_ACTIVE_POSITIONS": 5,  # Макс 5 активных сделок
             "MAX_TRADES_PER_DAY": 6,  # До 6 сделок в день
@@ -49,13 +50,15 @@ class AutoTradeManager:
         }
 
     def should_open_trade(self, chat_id, symbol, ai_confidence, volume_ratio):
-        import math
-
         config = self.trading_config
-        if not all(math.isfinite(x) for x in (ai_confidence, volume_ratio)):
-            return False, "Invalid quality or volume"
-        if ai_confidence < config["MIN_AI_CONFIDENCE"] or volume_ratio < config["MIN_VOLUME_RATIO"]:
-            return False, "Quality or volume filter rejected"
+        prefilter = evaluate_entry_prefilter(
+            ai_confidence,
+            volume_ratio,
+            min_quality=config["MIN_AI_CONFIDENCE"],
+            min_volume_ratio=config["MIN_VOLUME_RATIO"],
+        )
+        if not prefilter.passed:
+            return False, prefilter.reason
         positions = self.get_active_positions(chat_id)
         if len(positions) >= config["MAX_ACTIVE_POSITIONS"]:
             return False, "Active position limit"

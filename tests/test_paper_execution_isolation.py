@@ -11,6 +11,7 @@ from hybrid_strategy import AIMode, HybridDecision
 from paper_execution_bridge import PaperExecutionBridge
 from paper_journal import PaperJournal
 from paper_research import ResearchStore
+from paper_scanner import ScannerConfig, baseline_config
 from position_manager import AutoTradeManager
 from requests.exceptions import ReadTimeout
 from test_paper_journal import analysis
@@ -58,6 +59,8 @@ def test_existing_prospective_config_accepts_only_approved_execution_patch(tmp_p
     old = {"strategy_version": "technical-v1", "code_sha256": old_hash, "symbols": ["BTCUSDT"]}
     store.register_experiment("prospective-baseline-v1", old)
     assert store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": new_hash})
+    policy_hash = baseline_config(ScannerConfig())["code_sha256"]
+    assert store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": policy_hash})
     assert store.experiment_config("prospective-baseline-v1")["code_sha256"] == old_hash
     with pytest.raises(ValueError):
         store.register_experiment(
@@ -215,7 +218,7 @@ def test_v2_position_schema_migrates_without_replacing_existing_entry(tmp_path, 
         db.execute("PRAGMA user_version=2")
     upgraded = PaperJournal(journal.path)
     with sqlite3.connect(upgraded.path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
         assert db.execute("SELECT id FROM paper_positions").fetchone()[0] == position_id
     assert upgraded.report(experiment_id="prospective-baseline-v1")["paper_positions"] == 1
 

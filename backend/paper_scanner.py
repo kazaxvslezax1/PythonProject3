@@ -16,6 +16,7 @@ from ai_facts import check_facts
 from analysis_service import analyze_market
 from data import get_candles
 from deepseek_analyzer import MODEL_PRICES, PROMPT_VERSION, AIResponse, AnalysisStore, DeepSeekAnalyzer
+from entry_prefilter import AI_REQUEST_POLICY, PREFILTER_REJECTED, evaluate_entry_prefilter
 from hybrid_strategy import AIMode, HybridDecision, hybrid_signal
 from market_data import INTERVALS, validate_candles
 from market_snapshot import build_snapshot, live_snapshot
@@ -114,7 +115,13 @@ class ScannerConfig:
 def baseline_config(config):
     root = Path(__file__).resolve().parent
     source_hash = hashlib.sha256()
-    for name in ("strategy_engine.py", "technical_indicators.py", "ai_facts.py", "position_manager.py"):
+    for name in (
+        "strategy_engine.py",
+        "technical_indicators.py",
+        "ai_facts.py",
+        "position_manager.py",
+        "entry_prefilter.py",
+    ):
         source_hash.update((root / name).read_bytes())
     return {
         "strategy_version": "technical-v1",
@@ -205,7 +212,7 @@ class ResearchScanner:
 
         return live_snapshot(analysis["symbol"], analysis["timeframe"], analysis["as_of"], loader=loader)
 
-    async def _review(self, signal_id, analysis, origin):
+    async def _review(self, signal_id, analysis, origin, ai_request_policy):
         signal = analysis["technical_signal"]
         existing = self.store.ai_request(signal_id)
         if existing and existing["state"] == "SKIPPED":
@@ -228,6 +235,17 @@ class ResearchScanner:
         if os.environ.get("AI_MODE", "ADVISORY").upper() != "ADVISORY":
             self.store.skip_ai(signal_id, "AI_MODE_NOT_ADVISORY")
             return
+        if ai_request_policy == AI_REQUEST_POLICY and signal.plan is not None and existing is None:
+            prefilter = evaluate_entry_prefilter(signal.quality, analysis["indicators"]["Volume_Ratio"])
+            if not prefilter.passed:
+                self.store.skip_ai(signal_id, PREFILTER_REJECTED)
+                LOGGER.info(
+                    "PAPER AI skipped by prefilter symbol=%s timeframe=%s reason=%s",
+                    signal.symbol,
+                    signal.timeframe,
+                    PREFILTER_REJECTED,
+                )
+                return
         if not os.environ.get("DEEPSEEK_API_KEY") and self.analyzer is None:
             self.store.skip_ai(signal_id, "MISSING_API_KEY")
             self.journal.record_ai(signal_id, unavailable_decision(signal, "MISSING_API_KEY"))
@@ -326,7 +344,7 @@ class ResearchScanner:
                     "timeframe": signal.timeframe,
                     "as_of": close + timedelta(milliseconds=1),
                 }
-                await self._review(row["id"], analysis, row["origin"])
+                await self._review(row["id"], analysis, row["origin"], observed["ai_request_policy"])
             except Exception as exc:
                 self.store.error("RECOVERY", exc, row["symbol"], row["timeframe"])
                 LOGGER.warning("PAPER AI recovery failed type=%s", type(exc).__name__)
@@ -347,9 +365,7 @@ class ResearchScanner:
     def _recover_execution_metadata(self):
         for row in self.store.missing_execution_metadata(self.config.experiment_id):
             signal = TradingSignal.model_validate_json(row["signal_json"])
-            mode_at_observation = self.store.operation_mode_at(
-                self.config.experiment_id, row["observed_at"]
-            )
+            mode_at_observation = self.store.operation_mode_at(self.config.experiment_id, row["observed_at"])
             self._record_execution_metadata(
                 row["id"], signal, row["origin"], auto_paper_entries=bool(mode_at_observation)
             )
@@ -407,12 +423,13 @@ class ResearchScanner:
                     "data_source": "BINANCE_SPOT_KLINES",
                     "regime": regime_labels(analysis),
                     "quality_bucket": quality_bucket(analysis["technical_signal"].quality),
+                    "ai_request_policy": AI_REQUEST_POLICY,
                 },
             )
             recorded = self.store.observation(signal_id)
             actual_origin = recorded["origin"]
             signal = analysis["technical_signal"]
-            await self._review(signal_id, analysis, actual_origin)
+            await self._review(signal_id, analysis, actual_origin, recorded["ai_request_policy"])
             self._record_execution_metadata(signal_id, signal, actual_origin)
             latest = close
         self._outcomes(symbol, timeframe, frame)
@@ -494,12 +511,13 @@ class ResearchScanner:
             "running": self.running,
             "experiment_id": self.config.experiment_id,
             "strategy_version": "technical-v1",
+            "ai_request_policy": AI_REQUEST_POLICY,
             "symbols": list(self.config.symbols),
             "timeframes": list(self.config.timeframes),
             "journal_path": str(self.journal.path),
         }
         if self.experiment_start is not None:
-            result.update(self.store.status(self.config.experiment_id))
+            result.update(self.store.status(self.config.experiment_id, self.clock().date().isoformat()))
         else:
             result.update({"healthy": False, "error": self.last_error or "NOT_STARTED"})
         result["auto_paper_entries"] = self.config.auto_paper_entries
@@ -509,10 +527,16 @@ class ResearchScanner:
             spent = self.analyzer.store.spent(self.clock().date().isoformat())
             result["budget_used_usd"] = spent
             result["budget_remaining_usd"] = max(0, self.analyzer.daily_budget - spent)
+            if hasattr(self.analyzer.store, "attempt_count"):
+                result["ai_http_attempts_api_today"] = self.analyzer.store.attempt_count(
+                    self.clock().date().isoformat()
+                )
         else:
             store = AnalysisStore(Path(__file__).resolve().parent.parent / "runtime" / "ai.sqlite3")
             spent = store.spent(self.clock().date().isoformat())
             limit = float(os.environ.get("DEEPSEEK_DAILY_BUDGET_USD", "1.0"))
             result["budget_used_usd"] = spent
             result["budget_remaining_usd"] = max(0, limit - spent)
+            if hasattr(store, "attempt_count"):
+                result["ai_http_attempts_api_today"] = store.attempt_count(self.clock().date().isoformat())
         return result

@@ -45,6 +45,7 @@ class ScannerStatus(BaseModel):
     auto_paper_entries: bool = False
     experiment_id: str | None = None
     strategy_version: str
+    ai_request_policy: str | None = None
     symbols: list[str]
     timeframes: list[str]
     journal_path: str
@@ -56,6 +57,14 @@ class ScannerStatus(BaseModel):
     backfill_today: int = 0
     ai_calls_today: int = 0
     ai_failures_today: int = 0
+    ai_eligible_after_prefilter_today: int = 0
+    ai_skipped_by_prefilter_today: int = 0
+    ai_skipped_hold_today: int = 0
+    ai_requested_today: int = 0
+    ai_http_attempts_api_today: int | None = None
+    ai_ok_today: int = 0
+    ai_validation_failed_today: int = 0
+    ai_budget_exhausted_today: int = 0
     inflight_unknown: int = 0
     budget_used_usd: float | None = None
     budget_remaining_usd: float | None = None
@@ -249,8 +258,17 @@ def register_ai_handlers(
                 f"последняя свеча: {status.last_candle_close}; следующий scan: {status.next_scan_at}\n"
                 f"Сегодня наблюдений {status.observations_today} "
                 f"(LIVE {status.live_today}, BACKFILL {status.backfill_today}); "
-                f"AI вызовов {status.ai_calls_today}, ошибок {status.ai_failures_today}; "
+                f"учётных AI-попыток {status.ai_calls_today} (включая budget отказ), "
+                f"ошибок/отказов {status.ai_failures_today}; "
                 f"незавершённых {status.inflight_unknown}\n"
+                f"AI policy: {status.ai_request_policy}; после prefilter допущено "
+                f"{status.ai_eligible_after_prefilter_today}; пропущено prefilter "
+                f"{status.ai_skipped_by_prefilter_today}; HOLD "
+                f"{status.ai_skipped_hold_today}\n"
+                f"AI-заявок по сигналам {status.ai_requested_today}; HTTP attempts в общем API AI-store "
+                f"{status.ai_http_attempts_api_today}; OK {status.ai_ok_today}; "
+                f"validation failed {status.ai_validation_failed_today}; "
+                f"budget exhausted {status.ai_budget_exhausted_today}\n"
                 f"Бюджет USD: использовано {status.budget_used_usd}; "
                 f"осталось {status.budget_remaining_usd}\n"
                 f"SQLite: {status.journal_path}"
@@ -345,6 +363,11 @@ def register_ai_handlers(
                 f"Research: LIVE {r['research_origins'].get('LIVE', 0)}; "
                 f"BACKFILL {r['research_origins'].get('BACKFILL_TECHNICAL', 0)}; "
                 f"AI не запрашивался {r['ai_not_requested']}",
+                f"AI пропущен prefilter: {r['ai_skipped_by_prefilter']}; "
+                "политики запросов: "
+                + ", ".join(
+                    f"{policy}={count}" for policy, count in sorted(r["ai_request_policies"].items())
+                ),
             ]
             if not local_existed:
                 lines.append("Telegram SQLite создан при первом чтении отчёта; прежних записей в нём нет.")

@@ -75,7 +75,7 @@ class PaperJournal:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 3:
+            if version > 4:
                 raise ValueError("Paper journal schema is newer than this code")
             if version == 0:
                 db.executescript("""
@@ -132,7 +132,8 @@ class PaperJournal:
                         signal_id TEXT PRIMARY KEY, experiment_id TEXT NOT NULL,
                         origin TEXT NOT NULL, data_source TEXT NOT NULL,
                         market_at TEXT NOT NULL, observed_at TEXT NOT NULL,
-                        regime_json TEXT NOT NULL, quality_bucket TEXT NOT NULL);
+                        regime_json TEXT NOT NULL, quality_bucket TEXT NOT NULL,
+                        ai_request_policy TEXT NOT NULL DEFAULT 'pre-prefilter-v1');
                     CREATE INDEX IF NOT EXISTS ix_research_experiment
                         ON research_observations(experiment_id, origin);
                     CREATE TABLE IF NOT EXISTS research_ai_requests (
@@ -173,6 +174,14 @@ class PaperJournal:
                     if column.split()[0] not in existing_columns:
                         db.execute(f"ALTER TABLE paper_positions ADD COLUMN {column}")
                 db.execute("PRAGMA user_version=3")
+            if version < 4:
+                columns = {row["name"] for row in db.execute("PRAGMA table_info(research_observations)")}
+                if "ai_request_policy" not in columns:
+                    db.execute(
+                        "ALTER TABLE research_observations ADD COLUMN ai_request_policy "
+                        "TEXT NOT NULL DEFAULT 'pre-prefilter-v1'"
+                    )
+                db.execute("PRAGMA user_version=4")
             self.started_at = db.execute("SELECT value FROM journal_meta WHERE key='created_at'").fetchone()[
                 0
             ]
@@ -325,7 +334,9 @@ class PaperJournal:
                     raise ValueError("Candle already belongs to another research experiment")
                 research_origin = "MANUAL_PREEXISTING" if existing is not None else research["origin"]
                 db.execute(
-                    "INSERT OR IGNORE INTO research_observations VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT OR IGNORE INTO research_observations "
+                    "(signal_id,experiment_id,origin,data_source,market_at,observed_at,"
+                    "regime_json,quality_bucket,ai_request_policy) VALUES (?,?,?,?,?,?,?,?,?)",
                     (
                         signal_id,
                         research["experiment_id"],
@@ -335,6 +346,7 @@ class PaperJournal:
                         first_seen,
                         compact(research["regime"]),
                         research["quality_bucket"],
+                        research.get("ai_request_policy", "pre-prefilter-v1"),
                     ),
                 )
         return signal_id
@@ -867,6 +879,24 @@ class PaperJournal:
                 "WHERE a.state='SKIPPED' AND (? IS NULL OR r.experiment_id=?)",
                 (experiment_id, experiment_id),
             ).fetchone()[0]
+            ai_skip_reasons = {
+                row["reason"]: row["n"]
+                for row in db.execute(
+                    "SELECT a.reason, COUNT(*) AS n FROM research_ai_requests a "
+                    "JOIN research_observations r ON r.signal_id=a.signal_id "
+                    "WHERE a.state='SKIPPED' AND (? IS NULL OR r.experiment_id=?) "
+                    "GROUP BY a.reason",
+                    (experiment_id, experiment_id),
+                )
+            }
+            ai_request_policies = {
+                row["ai_request_policy"]: row["n"]
+                for row in db.execute(
+                    "SELECT ai_request_policy, COUNT(*) AS n FROM research_observations "
+                    "WHERE (? IS NULL OR experiment_id=?) GROUP BY ai_request_policy",
+                    (experiment_id, experiment_id),
+                )
+            }
         realized = 0.0
         peak = self.costs["capital_usd"]
         worst = 0.0
@@ -977,6 +1007,9 @@ class PaperJournal:
             },
             "ai_not_reviewed": sum(r["ai_status"] is None for r in observations),
             "ai_not_requested": ai_not_requested,
+            "ai_skip_reasons": ai_skip_reasons,
+            "ai_skipped_by_prefilter": ai_skip_reasons.get("PREFILTER_REJECTED", 0),
+            "ai_request_policies": ai_request_policies,
             "research_origins": research_origins,
             "research_outcomes": research_outcomes,
             "ai_observations": sum(r["ai_status"] is not None for r in observations),
@@ -1009,6 +1042,7 @@ class PaperJournal:
                     "o.market_json, o.ai_mode, o.ai_model, o.prompt_version, o.ai_at, o.ai_status, "
                     "o.fact_check, o.ai_direction, o.ai_reason, o.final_direction, o.shadow_decision, "
                     "r.experiment_id, r.origin, r.data_source, r.market_at, r.regime_json, "
+                    "r.ai_request_policy, "
                     "r.quality_bucket, u.status AS outcome_status, u.reached_sl, u.reached_tp1, "
                     "u.reached_tp2, u.reached_tp3, u.mfe_pct, u.mae_pct, u.bars, "
                     "u.bars_to_outcome, u.version AS outcome_version, a.state AS ai_request_state, "

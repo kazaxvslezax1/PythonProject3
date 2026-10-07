@@ -177,6 +177,13 @@ class AnalysisStore:
                 "SELECT COALESCE(SUM(cost),0) FROM reservations WHERE day=?", (day,)
             ).fetchone()[0]
 
+    def attempt_count(self, day):
+        """Recorded provider attempts across users of this AI store; excludes budget skips/cache hits."""
+        with self.connect() as db:
+            return db.execute(
+                "SELECT COUNT(*) FROM attempts WHERE substr(timestamp,1,10)=?", (day,)
+            ).fetchone()[0]
+
     def get(self, key):
         with self.connect() as db:
             row = db.execute("SELECT response_json FROM analyses WHERE request_hash=?", (key,)).fetchone()

@@ -6,6 +6,7 @@ import os
 import threading
 from datetime import datetime, timedelta, timezone
 
+from entry_prefilter import AI_REQUEST_POLICY, PREFILTER_REJECTED
 from paper_research import ResearchStore
 from signal_models import TradingSignal
 
@@ -94,6 +95,17 @@ class PaperExecutionBridge:
                     self.chat_id, signal.symbol, signal.quality, volume_ratio
                 )
                 if not allowed:
+                    if row["ai_request_policy"] == AI_REQUEST_POLICY and reason in (
+                        "Quality or volume filter rejected",
+                        "Invalid quality or volume",
+                    ):
+                        ai_request = self.store.ai_request(row["id"])
+                        if ai_request and ai_request["reason"] != PREFILTER_REJECTED:
+                            LOGGER.warning(
+                                "PAPER prefilter disagreement symbol=%s timeframe=%s",
+                                signal.symbol,
+                                signal.timeframe,
+                            )
                     self.manager.record_skipped_signal(
                         self.chat_id,
                         reason,

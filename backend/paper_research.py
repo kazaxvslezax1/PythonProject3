@@ -120,18 +120,26 @@ class ResearchStore:
             stored.pop("auto_paper_entries", None)
             comparable = dict(config)
             comparable.pop("auto_paper_entries", None)
-            # Approved execution-metadata patch for the already running prospective baseline.
-            # Keep the frozen experiment JSON unchanged; any further source change still fails.
-            approved_execution_patch = (
+            # Explicitly approved source transitions preserve this prospective experiment.
+            # The new hash includes the shared prefilter. Keep the frozen JSON unchanged;
+            # all other source changes and research-parameter changes still fail closed.
+            approved_source_transition = (
                 experiment_id == "prospective-baseline-v1"
                 and stored.get("code_sha256")
-                == "3b4ac4fe4ed621dea7cdcc1fec042af01c999d5b9d6be9c286b5b89c1934a712"
+                in {
+                    "3b4ac4fe4ed621dea7cdcc1fec042af01c999d5b9d6be9c286b5b89c1934a712",
+                    "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1",
+                }
                 and comparable.get("code_sha256")
-                == "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1"
+                in {
+                    "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1",
+                    "9393f3b4c2cd11f9a8928bd4dcb1b3da5bc099da2150644e028e9e3279263e2b",
+                }
+                and stored.get("code_sha256") != comparable.get("code_sha256")
                 and {key: value for key, value in stored.items() if key != "code_sha256"}
                 == {key: value for key, value in comparable.items() if key != "code_sha256"}
             )
-            if stored != comparable and not approved_execution_patch:
+            if stored != comparable and not approved_source_transition:
                 raise ExperimentConfigMismatch(
                     "Experiment configuration changed; choose a new PAPER_EXPERIMENT_ID"
                 )
@@ -217,7 +225,7 @@ class ResearchStore:
     def observation(self, signal_id):
         with self.journal.connect() as db:
             row = db.execute(
-                "SELECT o.*, r.origin, r.experiment_id FROM observations o "
+                "SELECT o.*, r.origin, r.experiment_id, r.ai_request_policy FROM observations o "
                 "JOIN research_observations r ON r.signal_id=o.id WHERE o.id=?",
                 (signal_id,),
             ).fetchone()
@@ -315,7 +323,7 @@ class ResearchStore:
             return [
                 dict(row)
                 for row in db.execute(
-                    "SELECT o.id, o.signal_json, o.market_json FROM observations o "
+                    "SELECT o.id, o.signal_json, o.market_json, r.ai_request_policy FROM observations o "
                     "JOIN research_observations r ON r.signal_id=o.id "
                     "JOIN research_execution e ON e.signal_id=o.id "
                     "WHERE r.experiment_id=? AND r.origin='LIVE' "
@@ -429,8 +437,8 @@ class ResearchStore:
                 "(SELECT id FROM scanner_errors ORDER BY id DESC LIMIT 200)"
             )
 
-    def status(self, experiment_id):
-        today = datetime.now(timezone.utc).date().isoformat()
+    def status(self, experiment_id, day=None):
+        today = day or datetime.now(timezone.utc).date().isoformat()
         with self.journal.connect() as db:
             state = db.execute(
                 "SELECT * FROM scanner_state WHERE experiment_id=?", (experiment_id,)
@@ -445,6 +453,22 @@ class ResearchStore:
                 "SELECT SUM(a.attempts), SUM(a.reason IS NOT NULL AND a.state='DONE') "
                 "FROM research_ai_requests a JOIN research_observations r ON r.signal_id=a.signal_id "
                 "WHERE r.experiment_id=? AND substr(a.requested_at,1,10)=?",
+                (experiment_id, today),
+            ).fetchone()
+            policy = db.execute(
+                "SELECT "
+                "SUM(r.origin='LIVE' AND r.ai_request_policy='post-prefilter-v1' "
+                "AND o.technical_direction IN ('LONG','SHORT') "
+                "AND (a.reason IS NULL OR a.reason!='PREFILTER_REJECTED')), "
+                "SUM(a.state='SKIPPED' AND a.reason='PREFILTER_REJECTED'), "
+                "SUM(a.state='SKIPPED' AND a.reason='HOLD_COST_POLICY'), "
+                "SUM(a.attempts>0), SUM(o.ai_status='OK'), "
+                "SUM(a.reason IN ('AI_REFERENCE_VALIDATION_FAILED','AI_FACT_CHECK_FAILED',"
+                "'AI_SCHEMA_VALIDATION_FAILED','INVALID_CONTENT_JSON')), "
+                "SUM(a.reason='BUDGET_EXHAUSTED') "
+                "FROM research_observations r JOIN observations o ON o.id=r.signal_id "
+                "LEFT JOIN research_ai_requests a ON a.signal_id=r.signal_id "
+                "WHERE r.experiment_id=? AND substr(r.observed_at,1,10)=?",
                 (experiment_id, today),
             ).fetchone()
             backlog = db.execute(
@@ -463,6 +487,13 @@ class ResearchStore:
             "backfill_today": counts[2] or 0,
             "ai_calls_today": ai[0] or 0,
             "ai_failures_today": ai[1] or 0,
+            "ai_eligible_after_prefilter_today": policy[0] or 0,
+            "ai_skipped_by_prefilter_today": policy[1] or 0,
+            "ai_skipped_hold_today": policy[2] or 0,
+            "ai_requested_today": policy[3] or 0,
+            "ai_ok_today": policy[4] or 0,
+            "ai_validation_failed_today": policy[5] or 0,
+            "ai_budget_exhausted_today": policy[6] or 0,
             "inflight_unknown": backlog,
         }
 

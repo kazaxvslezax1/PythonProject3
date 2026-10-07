@@ -72,8 +72,26 @@ def full_response(snapshot):
     return response
 
 
-def scanner_for(candles, tmp_path, monkeypatch, *, timeframe="1h", now=None, start=None, ai=None, **settings):
+def scanner_for(
+    candles,
+    tmp_path,
+    monkeypatch,
+    *,
+    timeframe="1h",
+    now=None,
+    start=None,
+    ai=None,
+    prefilter_pass=True,
+    ai_on_hold=True,
+    **settings,
+):
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    if prefilter_pass:
+        # These legacy tests exercise the AI/recovery path, independent of eligibility.
+        monkeypatch.setattr(
+            "paper_scanner.evaluate_entry_prefilter",
+            lambda quality, volume: SimpleNamespace(passed=True),
+        )
     step = timedelta(hours=4 if timeframe == "4h" else 1)
     now = now or candles.close_time.iloc[-1].to_pydatetime() + timedelta(milliseconds=1, seconds=15)
     start = start or now - step
@@ -81,7 +99,7 @@ def scanner_for(candles, tmp_path, monkeypatch, *, timeframe="1h", now=None, sta
         enabled=True,
         symbols=("BTCUSDT",),
         timeframes=(timeframe,),
-        ai_on_hold=True,
+        ai_on_hold=ai_on_hold,
         **settings,
     )
 
@@ -696,7 +714,7 @@ def test_v1_journal_migrates_without_losing_observations(snapshot, tmp_path):
     reopened = PaperJournal(journal.path)
     assert reopened.report()["signals"] == 1
     with sqlite3.connect(journal.path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
         assert db.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 1
 
 
