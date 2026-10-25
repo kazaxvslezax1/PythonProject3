@@ -37,11 +37,25 @@ class PaperJournalStatus(BaseModel):
     paired_ai_observations: int
 
 
+class TimeframeProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    latest_recorded_candle: str | None = None
+    oldest_pair_candle: str | None = None
+    expected_latest_closed_candle: str
+    missing_bars: int
+    recovery_state: Literal["RECOVERING", "PENDING_LIVE", "CAUGHT_UP"]
+    last_successful_processing: str | None = None
+    last_error_code: str | None = None
+
+
 class ScannerStatus(BaseModel):
     model_config = ConfigDict(extra="ignore", strict=True)
     enabled: bool
     running: bool
     healthy: bool
+    recovery_active: bool = False
+    caught_up: bool = False
+    timeframe_progress: dict[str, TimeframeProgress] = {}
     auto_paper_entries: bool = False
     experiment_id: str | None = None
     strategy_version: str
@@ -247,13 +261,23 @@ def register_ai_handlers(
             response = remote.get("http://127.0.0.1:8000/paper/scanner/status", timeout=(3, 5))
             response.raise_for_status()
             status = ScannerStatus.model_validate(response.json())
+            progress = "\n".join(
+                f"{tf}: {item.recovery_state}, missing={item.missing_bars}; "
+                f"последняя={item.latest_recorded_candle}; "
+                f"ожидается={item.expected_latest_closed_candle}; "
+                f"обработка={item.last_successful_processing}; ошибка={item.last_error_code}"
+                for tf, item in status.timeframe_progress.items()
+            )
+            progress_line = progress + "\n" if progress else ""
             send(
                 message,
                 "PAPER Research: "
                 f"enabled={status.enabled}; running={status.running}; healthy={status.healthy}; "
-                f"auto PAPER entries={status.auto_paper_entries}\n"
+                f"auto PAPER entries={status.auto_paper_entries}; "
+                f"recovery={status.recovery_active}; caught up={status.caught_up}\n"
                 f"Experiment {status.experiment_id}; strategy {status.strategy_version}\n"
                 f"Пары: {', '.join(status.symbols)}; TF: {', '.join(status.timeframes)}\n"
+                f"{progress_line}"
                 f"Последний успешный scan: {status.last_success_at}; "
                 f"последняя свеча: {status.last_candle_close}; следующий scan: {status.next_scan_at}\n"
                 f"Сегодня наблюдений {status.observations_today} "

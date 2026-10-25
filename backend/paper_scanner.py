@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+import requests
 from ai_facts import check_facts
 from analysis_service import analyze_market
 from data import get_candles
@@ -154,6 +155,20 @@ def safe_scanner_reason(exc):
     return "SCANNER_STARTUP_FAILED"
 
 
+def scanner_error_code(exc):
+    """Expose stable diagnostics without storing exception messages or request data."""
+    if isinstance(exc, (requests.RequestException, ConnectionError, TimeoutError)):
+        return "BINANCE_FETCH_FAILED"
+    if isinstance(exc, ValueError):
+        return {
+            "Backfill exceeds configured history window": "BACKFILL_WINDOW_EXCEEDED",
+            "Missing candles": "CANDLE_GAP",
+            "Insufficient closed candles": "CANDLE_GAP",
+            "Expected closed Binance candle not published yet": "CANDLE_NOT_PUBLISHED",
+        }.get(str(exc), "PROCESSING_FAILED")
+    return "PROCESSING_FAILED"
+
+
 def unavailable_decision(signal, reason):
     return HybridDecision(
         technical=signal,
@@ -181,6 +196,7 @@ class ResearchScanner:
         self.last_error = None
         self._next_run = None
         self._checked_buckets = {}
+        self._timeframe_error_codes = {}
 
     def initialize(self):
         if self.experiment_start is None:
@@ -394,13 +410,25 @@ class ResearchScanner:
         published_boundary = math.floor((now.timestamp() - self.config.close_delay_sec) / interval) * interval
         expected_close = datetime.fromtimestamp(published_boundary, timezone.utc) - timedelta(milliseconds=1)
         missing = max(1, math.ceil((expected_close - cutoff).total_seconds() / interval))
-        if missing > self.config.max_backfill_bars:
-            raise ValueError("Backfill exceeds configured history window")
-        limit = 120 + min(missing + 2, self.config.max_backfill_bars)
-        frame = await asyncio.to_thread(self.loader, symbol, timeframe, limit=limit, as_of=now)
-        frame = validate_candles(frame, timeframe, now, min_bars=120, require_fresh=False)
-        if frame.close_time.iloc[-1].to_pydatetime() < expected_close:
+        chunked = missing > self.config.max_backfill_bars
+        chunk_size = min(missing, self.config.max_backfill_bars)
+        target_close = expected_close - timedelta(seconds=(missing - chunk_size) * interval)
+        fetch_as_of = target_close + timedelta(milliseconds=1) if chunked else now
+        limit = 120 + min(chunk_size + 2, self.config.max_backfill_bars)
+        frame = await asyncio.to_thread(self.loader, symbol, timeframe, limit=limit, as_of=fetch_as_of)
+        frame = validate_candles(frame, timeframe, fetch_as_of, min_bars=120, require_fresh=False)
+        if frame.close_time.iloc[-1].to_pydatetime() < target_close:
             raise ValueError("Expected closed Binance candle not published yet")
+        if chunked:
+            self.store.record_recovery_gap(
+                self.config.experiment_id,
+                symbol,
+                timeframe,
+                target_close - timedelta(seconds=(chunk_size - 1) * interval),
+                expected_close,
+                missing,
+                target_close,
+            )
         candidates = [i for i in range(119, len(frame)) if frame.close_time.iloc[i].to_pydatetime() > cutoff]
         latest = None
         for index in candidates:
@@ -413,7 +441,7 @@ class ResearchScanner:
                 close + timedelta(milliseconds=1),
                 lambda *_, **__: history,
             )
-            origin = classify_origin(close, now, self.config.live_max_age_sec)
+            origin = classify_origin(close, self.clock(), self.config.live_max_age_sec)
             signal_id = self.journal.record_signal(
                 analysis,
                 origin="SCANNER_" + origin,
@@ -433,7 +461,7 @@ class ResearchScanner:
             self._record_execution_metadata(signal_id, signal, actual_origin)
             latest = close
         self._outcomes(symbol, timeframe, frame)
-        return latest
+        return latest, not chunked
 
     async def scan_once(self, now=None):
         self.initialize()
@@ -442,41 +470,91 @@ class ResearchScanner:
         self._recover_execution_metadata()
         latest = None
         errors = 0
+        recovering = False
         for timeframe in self.config.timeframes:
             bucket = math.floor((now.timestamp() - self.config.close_delay_sec) / INTERVALS[timeframe])
             if self._checked_buckets.get(timeframe) == bucket:
                 continue
             timeframe_errors = 0
+            timeframe_recovering = False
+            self._timeframe_error_codes.pop(timeframe, None)
             for symbol in self.config.symbols:
                 try:
-                    observed = await self._scan_pair(symbol, timeframe, now)
+                    observed, caught_up = await self._scan_pair(symbol, timeframe, now)
+                    recovering |= not caught_up
+                    timeframe_recovering |= not caught_up
                     if observed is not None and (latest is None or observed > latest):
                         latest = observed
                 except Exception as exc:
                     errors += 1
                     timeframe_errors += 1
-                    self.store.error("MARKET_OR_JOURNAL", exc, symbol, timeframe)
+                    code = scanner_error_code(exc)
+                    self._timeframe_error_codes[timeframe] = code
+                    self.store.error("MARKET_OR_JOURNAL", exc, symbol, timeframe, error_code=code)
                     LOGGER.warning(
-                        "PAPER scanner pair failed symbol=%s timeframe=%s type=%s",
+                        "PAPER scanner pair failed symbol=%s timeframe=%s type=%s code=%s",
                         symbol,
                         timeframe,
                         type(exc).__name__,
+                        code,
                     )
-            if not timeframe_errors:
+            if not timeframe_errors and not timeframe_recovering:
                 self._checked_buckets[timeframe] = bucket
         self.healthy = errors == 0
         self._next_run = (
             now + timedelta(seconds=60)
             if errors
+            else now + timedelta(seconds=1)
+            if recovering
             else next_due(now, self.config.timeframes, self.config.close_delay_sec)
         )
         self.store.heartbeat(
             self.config.experiment_id,
-            success=not errors,
+            success=not errors and not recovering,
             candle_close=latest,
             next_scan=self._next_run,
             healthy=not errors,
         )
+
+    def _progress(self):
+        now = self.clock()
+        rows = {
+            (row["symbol"], row["timeframe"]): row
+            for row in self.store.timeframe_progress(self.config.experiment_id)
+        }
+        progress = {}
+        for timeframe in self.config.timeframes:
+            step = INTERVALS[timeframe]
+            boundary = math.floor((now.timestamp() - self.config.close_delay_sec) / step) * step
+            expected = datetime.fromtimestamp(boundary, timezone.utc) - timedelta(milliseconds=1)
+            recorded = []
+            processed = []
+            missing = 0
+            historical = False
+            for symbol in self.config.symbols:
+                row = rows.get((symbol, timeframe))
+                last = datetime.fromisoformat(row["candle_close"]) if row else self.experiment_start
+                if row:
+                    recorded.append(last)
+                    if row["processed_at"] is not None:
+                        processed.append(row["processed_at"])
+                pair_missing = max(0, math.ceil((expected - last).total_seconds() / step))
+                missing = max(missing, pair_missing)
+                if (
+                    pair_missing
+                    and (now - last - timedelta(seconds=step)).total_seconds() > self.config.live_max_age_sec
+                ):
+                    historical = True
+            progress[timeframe] = {
+                "latest_recorded_candle": max(recorded).isoformat() if recorded else None,
+                "oldest_pair_candle": min(recorded).isoformat() if recorded else None,
+                "expected_latest_closed_candle": expected.isoformat(),
+                "missing_bars": missing,
+                "recovery_state": "RECOVERING" if historical else "PENDING_LIVE" if missing else "CAUGHT_UP",
+                "last_successful_processing": max(processed) if processed else None,
+                "last_error_code": self._timeframe_error_codes.get(timeframe),
+            }
+        return progress
 
     async def run(self):
         self.running = True
@@ -518,8 +596,15 @@ class ResearchScanner:
         }
         if self.experiment_start is not None:
             result.update(self.store.status(self.config.experiment_id, self.clock().date().isoformat()))
+            progress = self._progress()
+            result["timeframe_progress"] = progress
+            result["recovery_active"] = any(
+                item["recovery_state"] == "RECOVERING" for item in progress.values()
+            )
+            result["caught_up"] = all(item["missing_bars"] == 0 for item in progress.values())
         else:
             result.update({"healthy": False, "error": self.last_error or "NOT_STARTED"})
+            result.update({"timeframe_progress": {}, "recovery_active": False, "caught_up": False})
         result["auto_paper_entries"] = self.config.auto_paper_entries
         if self.last_error:
             result["error"] = self.last_error

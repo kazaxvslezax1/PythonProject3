@@ -215,6 +215,57 @@ class ResearchStore:
             ).fetchone()
         return row[0]
 
+    def timeframe_progress(self, experiment_id):
+        """Recorded candle and processing time for each pair, including stalled pairs."""
+        with self.journal.connect() as db:
+            return [
+                dict(row)
+                for row in db.execute(
+                    "SELECT o.symbol, o.timeframe, MAX(o.candle_close) AS candle_close, "
+                    "MAX(CASE WHEN e.signal_id IS NOT NULL THEN r.observed_at END) AS processed_at "
+                    "FROM observations o "
+                    "JOIN research_observations r ON r.signal_id=o.id "
+                    "LEFT JOIN research_execution e ON e.signal_id=o.id "
+                    "WHERE r.experiment_id=? GROUP BY o.symbol,o.timeframe",
+                    (experiment_id,),
+                )
+            ]
+
+    def record_recovery_gap(self, experiment_id, symbol, timeframe, gap_start, gap_end, bars, chunk_end):
+        """Audit the historical span without changing any observation or trade."""
+        when = now_utc()
+        start, end = as_utc(gap_start), as_utc(gap_end)
+        with self.journal.connect() as db:
+            for row in db.execute(
+                "SELECT payload_json FROM journal_events WHERE kind='SCANNER_RECOVERY_GAP' AND signal_id=?",
+                (experiment_id,),
+            ):
+                previous = json.loads(row[0])
+                if (
+                    previous["symbol"] == symbol
+                    and previous["timeframe"] == timeframe
+                    and previous["gap_start"] <= start
+                    and previous["gap_end"] >= end
+                ):
+                    return
+            self.journal.event(
+                db,
+                uid(experiment_id, symbol, timeframe, "SCANNER_RECOVERY_GAP", start, end),
+                "SCANNER_RECOVERY_GAP",
+                when,
+                signal_id=experiment_id,
+                payload={
+                    "experiment_id": experiment_id,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "gap_start": start,
+                    "gap_end": end,
+                    "first_chunk_end": as_utc(chunk_end),
+                    "recovery_at": when,
+                    "missing_bars": bars,
+                },
+            )
+
     def experiment_config(self, experiment_id):
         with self.journal.connect() as db:
             row = db.execute(
@@ -412,12 +463,15 @@ class ResearchStore:
         with self.journal.connect() as db:
             db.execute(
                 "UPDATE scanner_state SET heartbeat_at=?, last_success_at=CASE WHEN ? THEN ? "
-                "ELSE last_success_at END, last_candle_close=COALESCE(?,last_candle_close), "
+                "ELSE last_success_at END, last_candle_close=CASE "
+                "WHEN last_candle_close IS NULL OR ? > last_candle_close THEN ? "
+                "ELSE last_candle_close END, "
                 "next_scan_at=?, healthy=? WHERE experiment_id=?",
                 (
                     now_utc(),
                     int(success),
                     now_utc(),
+                    as_utc(candle_close) if candle_close is not None else None,
                     as_utc(candle_close) if candle_close is not None else None,
                     as_utc(next_scan) if next_scan is not None else None,
                     int(healthy),
@@ -425,12 +479,12 @@ class ResearchStore:
                 ),
             )
 
-    def error(self, stage, exc, symbol=None, timeframe=None):
+    def error(self, stage, exc, symbol=None, timeframe=None, error_code="PROCESSING_FAILED"):
         with self.journal.connect() as db:
             db.execute(
-                "INSERT INTO scanner_errors(occurred_at,stage,error_type,symbol,timeframe) "
-                "VALUES (?,?,?,?,?)",
-                (now_utc(), stage, type(exc).__name__, symbol, timeframe),
+                "INSERT INTO scanner_errors(occurred_at,stage,error_type,symbol,timeframe,error_code) "
+                "VALUES (?,?,?,?,?,?)",
+                (now_utc(), stage, type(exc).__name__, symbol, timeframe, error_code),
             )
             db.execute(
                 "DELETE FROM scanner_errors WHERE id NOT IN "
@@ -502,7 +556,8 @@ class ResearchStore:
             return [
                 dict(row)
                 for row in db.execute(
-                    "SELECT occurred_at, stage, error_type, symbol, timeframe FROM scanner_errors "
+                    "SELECT occurred_at, stage, error_type, symbol, timeframe, error_code "
+                    "FROM scanner_errors "
                     "ORDER BY id DESC LIMIT ?",
                     (max(1, min(int(limit), 20)),),
                 )

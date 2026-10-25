@@ -200,7 +200,7 @@ def test_v3_migration_preserves_old_policy_and_rows(tmp_path, snapshot):
         LEGACY_AI_REQUEST_POLICY: 1
     }
     with sqlite3.connect(journal.path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 5
         assert db.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 1
 
 

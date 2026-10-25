@@ -218,7 +218,7 @@ def test_v2_position_schema_migrates_without_replacing_existing_entry(tmp_path, 
         db.execute("PRAGMA user_version=2")
     upgraded = PaperJournal(journal.path)
     with sqlite3.connect(upgraded.path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 5
         assert db.execute("SELECT id FROM paper_positions").fetchone()[0] == position_id
     assert upgraded.report(experiment_id="prospective-baseline-v1")["paper_positions"] == 1
 

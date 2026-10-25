@@ -75,7 +75,7 @@ class PaperJournal:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 4:
+            if version > 5:
                 raise ValueError("Paper journal schema is newer than this code")
             if version == 0:
                 db.executescript("""
@@ -182,6 +182,11 @@ class PaperJournal:
                         "TEXT NOT NULL DEFAULT 'pre-prefilter-v1'"
                     )
                 db.execute("PRAGMA user_version=4")
+            if version < 5:
+                columns = {row["name"] for row in db.execute("PRAGMA table_info(scanner_errors)")}
+                if "error_code" not in columns:
+                    db.execute("ALTER TABLE scanner_errors ADD COLUMN error_code TEXT")
+                db.execute("PRAGMA user_version=5")
             self.started_at = db.execute("SELECT value FROM journal_meta WHERE key='created_at'").fetchone()[
                 0
             ]
