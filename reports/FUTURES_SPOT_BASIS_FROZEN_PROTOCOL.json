@@ -1,0 +1,28 @@
+{
+  "id": "futures-spot-trade-basis-2026-10-28-v1",
+  "status": "FROZEN_BEFORE_OUTCOMES",
+  "scope": "offline incremental-information research; no strategy or PnL claim",
+  "sources": {
+    "spot_2024_2025": "runtime/walk_forward/data/{symbol}_{timeframe}_2024-01-01_2026-01-01.csv",
+    "spot_2026_4h": "reports/OOS_2026_DATA/{symbol}_4h_2026-01-01_2026-10-26T04.csv",
+    "futures": "reports/FUTURES_FLOW_OI_DATA/normalized/futures_aggregate/{symbol}_{timeframe}.csv.gz",
+    "futures_parent": "official Binance Public Data USD-M perpetual monthly 5m trade klines; SHA-verified in FUTURES_FLOW_OI_DATA/manifest.json",
+    "no_new_download": true
+  },
+  "universe_multiplier": {"BTCUSDT": ["BTCUSDT", 1], "ETHUSDT": ["ETHUSDT", 1], "BNBUSDT": ["BNBUSDT", 1], "SOLUSDT": ["SOLUSDT", 1], "XRPUSDT": ["XRPUSDT", 1], "DOGEUSDT": ["DOGEUSDT", 1], "SHIBUSDT": ["1000SHIBUSDT", 1000], "PEPEUSDT": ["1000PEPEUSDT", 1000]},
+  "basis": "perpetual_trade_basis = (Futures 5m-derived interval trade close / contract_multiplier) / Spot interval trade close - 1; not mark/index/premium-index basis",
+  "causality": "exact UTC decision_time T join; Spot open=T-timeframe, close_time=T-1ms; Futures first_open=T-timeframe, last_close=T-1ms; 12 or 48 complete 5m bars; all inputs known at T assuming archive prices publish promptly; no nearest, bfill, centered windows or future data in features",
+  "period": {"start": "2024-01-01T00:00:00Z", "end_exclusive": "2026-10-01T00:00:00Z", "one_hour_end_exclusive": "2026-01-01T00:00:00Z", "discovery": ["2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z"], "validation": ["2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z"], "diagnostic_2026_4h": ["2026-01-01T00:00:00Z", "2026-10-01T00:00:00Z"]},
+  "features": {"B1": "basis level in percent", "B2": "current minus preceding basis in percentage points", "B3": "rank of current basis against strictly preceding 90 complete basis observations (fraction <= current); require 90 prior", "B4": "abs(current basis)-abs(previous basis) in percentage points", "B5": "fraction of preceding 3 basis signs equal current sign; require all 3 prior", "A": "same 14 Spot+Futures OHLCV controls as prior A2: ret1/3/6, range, volatility12, volume_ratio24, trend24 for each market"},
+  "thresholds": "per-symbol/timeframe discovery-only q75/q90 positive basis level, q10 basis level, q75 positive Spot ret1, q90 absolute basis change; no optimization or later update",
+  "hypotheses": {"H1": "basis>=positive q75 and Spot ret1>0: signed forward residual vs A positive", "H2": "basis>=positive q90 and Spot ret1>=positive q75: signed forward residual vs A negative (crowding/exhaustion)", "H3": "basis<=q10 and basis<0: signed forward residual vs A negative", "H4": "abs(basis change)>=q90 and abs basis expanding: absolute forward residual vs A positive"},
+  "targets": "Spot close(T-1ms) to future Spot close at T+h bars, signed and absolute percent; MFE=max future highs over bars 1..h vs current close; MAE=min future lows over bars 1..h vs current close. Outcomes never features.",
+  "horizons": {"1h": {"primary_bars": 6, "secondary_bars": [1, 3, 12, 24]}, "4h": {"primary_bars": 3, "secondary_bars": [1, 6, 12]}},
+  "models": "per-symbol/timeframe Ridge(alpha=10), discovery-only standardization, same complete rows for A/B/C; A=Spot+Futures price controls, B=five basis features, C=A+B; fit 2024, predict validation and 2026 diagnostic unchanged; primary metric signed forward MSE uplift (A-C)/A; H4 separately absolute MSE uplift",
+  "inference": "UTC calendar-week block bootstrap 500 resamples seed 20261028 across all symbols; one-sided expected-sign effects; Holm adjustment over 8 H1-H4 x 1h/4h primary tests; overlapping windows and cross-symbol dependence remain; secondary horizons exploratory only",
+  "costs_pct_round_trip": {"zero": 0.0, "base": 0.3, "double": 0.6},
+  "pass": {"min_events": 100, "min_weeks": 12, "min_symbols_expected_sign": 6, "min_positive_quarters": 3, "min_quarters": 4, "model_uplift_min": 0.001, "economic_effect_min_pp": 0.3, "ROBUST": "correct validation sign, positive 95% weekly bootstrap lower bound, Holm p<0.05, sufficient N/weeks, >=6/8 symbols and >=3/4 2025 quarters expected sign, all leave-one-symbol-out expected sign, C model uplift>=0.001, residual effect>=0.3pp, raw directional/absolute event hurdle remains >0 after 0.6pp, 2026 4h diagnostic same sign, no integrity or outlier dependence", "PROMISING": "correct validation sign, sufficient N/weeks and positive corresponding C model uplift, but one or more ROBUST conditions missing", "WEAK": "correct validation sign but insufficient N/weeks or no positive C model uplift", "REJECT": "wrong or zero validation effect or integrity failure", "overall_yes": "at least one ROBUST and corresponding positive model uplift", "overall_no": "no PROMISING/ROBUST and both primary signed C-vs-A model uplifts <=0", "otherwise": "INCONCLUSIVE"},
+  "missing_and_integrity": "verify immutable source hashes, UTC grids, exact close alignment, duplicate/missing bars, OHLC, normalized basis; no filling; preserve extreme observations; fail on abs(basis)>20% or unexplained discontinuities, report causes before evaluation; exclude rows with missing input from all A/B/C comparisons identically; purge target at every segment end",
+  "limitations": "2024-2026 market history already examined in previous research; 2026 4h is contaminated chronological diagnostic, not pristine holdout; trade-close basis is not executable spread, and archive availability is not proven live latency; event cost hurdle is not trading PnL",
+  "safety": "research files only; no production, PAPER, SQLite, DeepSeek, orders, commit or push"
+}

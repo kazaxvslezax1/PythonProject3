@@ -1,0 +1,4971 @@
+{
+  "protocol_sha256": "0322a2af725cea7ca44c1e34d2604992f05c39376dd54414b1dc7fa6ed837a46",
+  "code_sha256": "aee8941f59a06c26f06aeaa75c05622c47e2a57ec0ef3fd3591663194b1cbb3c",
+  "data_manifest_sha256": "8dd95d6f3c87dd22f61943889645304c08294c136799a04dd3c0fdd14446c8e2",
+  "events_sha256": "946568aab9feace0192444727f5e1a3f39231bb169c91e1f58f6df33a0eb8663",
+  "source": {
+    "new_2020_2023": "official public Binance Spot GET https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval=4h&startTime={ms}&endTime={ms}&limit=1000; only 2020-01-01..2024-01-01; 8 fixed symbols; immutable raw pages and SHA manifest",
+    "existing_2024_2025": "runtime/walk_forward/data/{symbol}_4h_2024-01-01_2026-01-01.csv with SHA from WALK_FORWARD_RESULTS.json",
+    "existing_2026": "reports/OOS_2026_DATA/{symbol}_4h_2026-01-01_2026-10-26T04.csv with SHA from OOS_2026_CONFIRMATION.json",
+    "download_limit": "at most 80,000 new 4h rows, 90 GET pages, 30 MiB raw JSON; no futures or other markets"
+  },
+  "integrity": [
+    {
+      "symbol": "BTCUSDT",
+      "first_open": "2020-01-01T00:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 14930,
+      "missing_4h": 10,
+      "gaps": 9,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/BTCUSDT_4h_2020_2023.csv.gz": "2a17495b9cb80ef950938038b8e0a7034150b9c34936f22dec6001020d97981f",
+        "runtime/walk_forward/data/BTCUSDT_4h_2024-01-01_2026-01-01.csv": "3b6480f74e9de70a00a001ad6c0d50a5695e606e4e033e9ae82b3f0ed0692729",
+        "reports/OOS_2026_DATA/BTCUSDT_4h_2026-01-01_2026-10-26T04.csv": "f63e733e52e931a959b7dc7a1089f633e069d89a1a93a2f585e2a3abaf10daf6"
+      },
+      "observed_1d": 2481,
+      "incomplete_1d_excluded": 9,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/BTCUSDT_4h_2020_2023.csv.gz",
+        "sha256": "2a17495b9cb80ef950938038b8e0a7034150b9c34936f22dec6001020d97981f",
+        "rows": 8756,
+        "first_open": "2020-01-01T00:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 9,
+        "partial_4h_excluded": 9,
+        "gap_count": 9,
+        "missing_4h_bars": 10
+      }
+    },
+    {
+      "symbol": "ETHUSDT",
+      "first_open": "2020-01-01T00:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 14930,
+      "missing_4h": 10,
+      "gaps": 9,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/ETHUSDT_4h_2020_2023.csv.gz": "99fbf509aaaf8eb10af7370015ed3764bba43ca0c873bf4b599d09aa3c1c9c29",
+        "runtime/walk_forward/data/ETHUSDT_4h_2024-01-01_2026-01-01.csv": "a1ec0cb2c915649735a5dce2f34846454766b015812ae3e4e4924a0c6806aefc",
+        "reports/OOS_2026_DATA/ETHUSDT_4h_2026-01-01_2026-10-26T04.csv": "d33e173b274ddd746767c2bd141053bd5752f7a5908be9a6bd0d7abf5b613313"
+      },
+      "observed_1d": 2481,
+      "incomplete_1d_excluded": 9,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/ETHUSDT_4h_2020_2023.csv.gz",
+        "sha256": "99fbf509aaaf8eb10af7370015ed3764bba43ca0c873bf4b599d09aa3c1c9c29",
+        "rows": 8756,
+        "first_open": "2020-01-01T00:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 9,
+        "partial_4h_excluded": 9,
+        "gap_count": 9,
+        "missing_4h_bars": 10
+      }
+    },
+    {
+      "symbol": "BNBUSDT",
+      "first_open": "2020-01-01T00:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 14930,
+      "missing_4h": 10,
+      "gaps": 9,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/BNBUSDT_4h_2020_2023.csv.gz": "56c8ace64452d6213f92727a25ba358697675092ef2f430f4eddc928efb23810",
+        "runtime/walk_forward/data/BNBUSDT_4h_2024-01-01_2026-01-01.csv": "2bdcac941e490ef9aac417990d1372b4957929a589c64b35702715c2d5b2c749",
+        "reports/OOS_2026_DATA/BNBUSDT_4h_2026-01-01_2026-10-26T04.csv": "f634bd8bc99346273400a2d52245b22fe1e1413cf0855d36476887021a0a292f"
+      },
+      "observed_1d": 2481,
+      "incomplete_1d_excluded": 9,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/BNBUSDT_4h_2020_2023.csv.gz",
+        "sha256": "56c8ace64452d6213f92727a25ba358697675092ef2f430f4eddc928efb23810",
+        "rows": 8756,
+        "first_open": "2020-01-01T00:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 9,
+        "partial_4h_excluded": 9,
+        "gap_count": 9,
+        "missing_4h_bars": 10
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "first_open": "2020-08-11T04:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 13595,
+      "missing_4h": 6,
+      "gaps": 6,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/SOLUSDT_4h_2020_2023.csv.gz": "3d7139c9116579e00c0194e3392a27ea7f081ea2a90da3ed8779e722d461bae8",
+        "runtime/walk_forward/data/SOLUSDT_4h_2024-01-01_2026-01-01.csv": "7b73728893c6b2b38379f0144ba3267572b44a70e5e8a9e461a6a27bf0413b4b",
+        "reports/OOS_2026_DATA/SOLUSDT_4h_2026-01-01_2026-10-26T04.csv": "0249d66bd9db518608abc0fc1f28fc75427e4b5a0c160756768e91965302cde8"
+      },
+      "observed_1d": 2260,
+      "incomplete_1d_excluded": 7,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/SOLUSDT_4h_2020_2023.csv.gz",
+        "sha256": "3d7139c9116579e00c0194e3392a27ea7f081ea2a90da3ed8779e722d461bae8",
+        "rows": 7421,
+        "first_open": "2020-08-11T04:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 8,
+        "partial_4h_excluded": 6,
+        "gap_count": 6,
+        "missing_4h_bars": 6
+      }
+    },
+    {
+      "symbol": "XRPUSDT",
+      "first_open": "2020-01-01T00:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 14930,
+      "missing_4h": 10,
+      "gaps": 9,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/XRPUSDT_4h_2020_2023.csv.gz": "fdc8b929ae96b6a5ae999b116ec4427bff454e7d7aa4a4c865a81d8d757e0d1d",
+        "runtime/walk_forward/data/XRPUSDT_4h_2024-01-01_2026-01-01.csv": "17e96162fa49af144c11aa04cc813b9f5ce8d334ddef4a787fc9ad0f8afae0df",
+        "reports/OOS_2026_DATA/XRPUSDT_4h_2026-01-01_2026-10-26T04.csv": "1b162304cb7d08fb7a0700443c95bc6607c6642d67ec1c9eccf94a2aca8a1002"
+      },
+      "observed_1d": 2481,
+      "incomplete_1d_excluded": 9,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/XRPUSDT_4h_2020_2023.csv.gz",
+        "sha256": "fdc8b929ae96b6a5ae999b116ec4427bff454e7d7aa4a4c865a81d8d757e0d1d",
+        "rows": 8756,
+        "first_open": "2020-01-01T00:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 9,
+        "partial_4h_excluded": 9,
+        "gap_count": 9,
+        "missing_4h_bars": 10
+      }
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "first_open": "2020-01-01T00:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 14930,
+      "missing_4h": 10,
+      "gaps": 9,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/DOGEUSDT_4h_2020_2023.csv.gz": "98eec134b709459ad5a6640c5c1cc863b58313ef8c216ae0d5de663e8108c4b6",
+        "runtime/walk_forward/data/DOGEUSDT_4h_2024-01-01_2026-01-01.csv": "5697ce7deb44aaaa21e493c5ce678240dd20e698a15623f65e8d30dae059c1f9",
+        "reports/OOS_2026_DATA/DOGEUSDT_4h_2026-01-01_2026-10-26T04.csv": "0899bd355b1a69ad5a7be3a52790d5563bbf1fc968c726fbece6c7091d8e786e"
+      },
+      "observed_1d": 2481,
+      "incomplete_1d_excluded": 9,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/DOGEUSDT_4h_2020_2023.csv.gz",
+        "sha256": "98eec134b709459ad5a6640c5c1cc863b58313ef8c216ae0d5de663e8108c4b6",
+        "rows": 8756,
+        "first_open": "2020-01-01T00:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 9,
+        "partial_4h_excluded": 9,
+        "gap_count": 9,
+        "missing_4h_bars": 10
+      }
+    },
+    {
+      "symbol": "SHIBUSDT",
+      "first_open": "2021-05-10T08:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 11966,
+      "missing_4h": 2,
+      "gaps": 2,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/SHIBUSDT_4h_2020_2023.csv.gz": "9d18abe8e6fce791d2d596e8d9f1bd0d1b3334874c6fbd4bc77bd23e70b797e4",
+        "runtime/walk_forward/data/SHIBUSDT_4h_2024-01-01_2026-01-01.csv": "460776258773251e4211589844625bed2a0538a873827a6b8cb6093fd0e90694",
+        "reports/OOS_2026_DATA/SHIBUSDT_4h_2026-01-01_2026-10-26T04.csv": "54ee2ba591e946e6da0b77ca0591a088e6039a1e850e297de6089bb8b5d74188"
+      },
+      "observed_1d": 1992,
+      "incomplete_1d_excluded": 3,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/SHIBUSDT_4h_2020_2023.csv.gz",
+        "sha256": "9d18abe8e6fce791d2d596e8d9f1bd0d1b3334874c6fbd4bc77bd23e70b797e4",
+        "rows": 5792,
+        "first_open": "2021-05-10T08:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 6,
+        "partial_4h_excluded": 2,
+        "gap_count": 2,
+        "missing_4h_bars": 2
+      }
+    },
+    {
+      "symbol": "PEPEUSDT",
+      "first_open": "2023-05-05T16:00:00+00:00",
+      "last_open": "2026-10-25T20:00:00+00:00",
+      "observed_4h": 7616,
+      "missing_4h": 0,
+      "gaps": 0,
+      "duplicates": 0,
+      "invalid_ohlc": 0,
+      "source_sha256": {
+        "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/PEPEUSDT_4h_2020_2023.csv.gz": "3c2f91c2031c8329e7681cecc28ecbdd487d5d62804b44747100e295ecc8ef05",
+        "runtime/walk_forward/data/PEPEUSDT_4h_2024-01-01_2026-01-01.csv": "9af5d4ea51c70a8750e5e73a279beb07de72fd003ef3db22d39049442c9c6f47",
+        "reports/OOS_2026_DATA/PEPEUSDT_4h_2026-01-01_2026-10-26T04.csv": "83c76dfcff2db0b090ebfce45b801ed99565bf5f772ceaec160ffa109f0d76dc"
+      },
+      "observed_1d": 1269,
+      "incomplete_1d_excluded": 1,
+      "new_history": {
+        "file": "reports/HIGHER_TIMEFRAME_EDGE_DATA/normalized_spot_4h/PEPEUSDT_4h_2020_2023.csv.gz",
+        "sha256": "3c2f91c2031c8329e7681cecc28ecbdd487d5d62804b44747100e295ecc8ef05",
+        "rows": 1442,
+        "first_open": "2023-05-05T16:00:00+00:00",
+        "last_open": "2023-12-31T20:00:00+00:00",
+        "pages": 2,
+        "partial_4h_excluded": 0,
+        "gap_count": 0,
+        "missing_4h_bars": 0
+      }
+    }
+  ],
+  "common_start": {
+    "4h": "2023-12-01T20:00:00+00:00",
+    "1d": "2023-12-03T00:00:00+00:00"
+  },
+  "primary": [
+    {
+      "hypothesis": "H1",
+      "timeframe": "4h",
+      "discovery": {
+        "n": 38,
+        "months": 8,
+        "mean_pct": 4.1207631186799745,
+        "ci95_pct": [
+          -1.8199344079122404,
+          10.347273296880214
+        ],
+        "p": 0.17282717282717283,
+        "total_events": 38,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 2.264286755540108,
+        "raw_mean_pct": 5.5155545147301765,
+        "cost_hurdle_pct": {
+          "zero": 5.5155545147301765,
+          "base": 5.215554514730177,
+          "double": 4.915554514730177
+        },
+        "effect_to_base_cost": 13.735877062266582,
+        "by_year": {
+          "2022": {
+            "count": 38,
+            "mean": 4.120763118679975
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 7,
+            "mean": 1.756318149286337
+          },
+          "BTCUSDT": {
+            "count": 5,
+            "mean": 2.2759500627068667
+          },
+          "DOGEUSDT": {
+            "count": 5,
+            "mean": 14.16248022721419
+          },
+          "ETHUSDT": {
+            "count": 6,
+            "mean": 3.614271592768899
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": -0.15946671367993592
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": 6.083055817377557
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": 0.9113044818140817
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 4.40028024837287,
+          "ETHUSDT": 4.215730279788302,
+          "BNBUSDT": 4.65467004725273,
+          "SOLUSDT": 3.752833237674178,
+          "XRPUSDT": 4.607044730326322,
+          "DOGEUSDT": 2.5992908295081243,
+          "SHIBUSDT": 4.624319569545846,
+          "PEPEUSDT": 4.1207631186799745
+        },
+        "without_best_pct": 2.1910411561146597,
+        "top1_positive_contribution": 0.29370210231120664,
+        "mfe_median_pct": 12.663065797732509,
+        "mae_median_pct": -5.759880588342625,
+        "mfe_q10_q90": [
+          1.9282117218309625,
+          34.35480220069307
+        ],
+        "mae_q10_q90": [
+          -21.42618836086657,
+          -1.4628327263603698
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 21,
+            "mean": 2.600178577310332
+          },
+          "neutral": {
+            "count": 3,
+            "mean": 0.6748666377333615
+          },
+          "up": {
+            "count": 9,
+            "mean": 9.842322017731961
+          }
+        },
+        "median_days_between_events": 36.0
+      },
+      "validation": {
+        "n": 176,
+        "months": 33,
+        "mean_pct": 1.0626602274877839,
+        "ci95_pct": [
+          -4.488204665702802,
+          8.324504656443317
+        ],
+        "p": 0.7752247752247752,
+        "total_events": 176,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -2.2795926913025744,
+        "raw_mean_pct": 2.797673474739506,
+        "cost_hurdle_pct": {
+          "zero": 2.797673474739506,
+          "base": 2.497673474739506,
+          "double": 2.197673474739506
+        },
+        "effect_to_base_cost": 3.542200758292613,
+        "by_year": {
+          "2023": {
+            "count": 56,
+            "mean": -0.811625284130298
+          },
+          "2024": {
+            "count": 65,
+            "mean": 4.678771031305244
+          },
+          "2025": {
+            "count": 55,
+            "mean": -1.3025618379217145
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 22,
+            "mean": 0.1103469289137485
+          },
+          "BTCUSDT": {
+            "count": 24,
+            "mean": 1.0362174220256215
+          },
+          "DOGEUSDT": {
+            "count": 20,
+            "mean": 1.7616743530609753
+          },
+          "ETHUSDT": {
+            "count": 27,
+            "mean": -0.9805469054694432
+          },
+          "PEPEUSDT": {
+            "count": 16,
+            "mean": 10.230044117759618
+          },
+          "SHIBUSDT": {
+            "count": 20,
+            "mean": 1.2146883497497443
+          },
+          "SOLUSDT": {
+            "count": 29,
+            "mean": -3.559930548941592
+          },
+          "XRPUSDT": {
+            "count": 18,
+            "mean": 3.679785661096963
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.0668354072975983,
+          "ETHUSDT": 1.4329058153390928,
+          "BNBUSDT": 1.198704984426931,
+          "SOLUSDT": 1.9745999044704496,
+          "XRPUSDT": 0.764506697076611,
+          "DOGEUSDT": 0.9730430319014769,
+          "SHIBUSDT": 1.0431694425824036,
+          "PEPEUSDT": 0.14592183846059997
+        },
+        "without_best_pct": -0.40040464397855724,
+        "top1_positive_contribution": 0.34921135095486094,
+        "mfe_median_pct": 7.274557638619505,
+        "mae_median_pct": -7.468953164213705,
+        "mfe_q10_q90": [
+          1.0133990371701818,
+          26.023926886875856
+        ],
+        "mae_q10_q90": [
+          -20.512371191133553,
+          -0.9732365028032319
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 33,
+            "mean": -5.145999271283628
+          },
+          "neutral": {
+            "count": 41,
+            "mean": -7.361334647401408
+          },
+          "up": {
+            "count": 78,
+            "mean": 8.125534338526313
+          }
+        },
+        "median_days_between_events": 43.33333333333333
+      },
+      "diagnostic_2026": {
+        "n": 46,
+        "months": 7,
+        "mean_pct": 1.8445252659669713,
+        "ci95_pct": [
+          -2.5331290314921073,
+          6.778518868050467
+        ],
+        "p": 0.43456543456543456,
+        "total_events": 46,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -1.224908597026876,
+        "raw_mean_pct": 2.26260635983228,
+        "cost_hurdle_pct": {
+          "zero": 2.26260635983228,
+          "base": 1.9626063598322798,
+          "double": 1.6626063598322798
+        },
+        "effect_to_base_cost": 6.148417553223238,
+        "by_year": {
+          "2026": {
+            "count": 46,
+            "mean": 1.844525265966971
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 6,
+            "mean": 0.058731001435552876
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": 6.86240548936045
+          },
+          "DOGEUSDT": {
+            "count": 6,
+            "mean": -1.152718552048081
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": 2.7877100013951837
+          },
+          "PEPEUSDT": {
+            "count": 7,
+            "mean": 4.217345259605946
+          },
+          "SHIBUSDT": {
+            "count": 7,
+            "mean": -4.146033094043303
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": 3.9246622299622893
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": 5.195351407005176
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.3666319113580683,
+          "ETHUSDT": 1.729502737256213,
+          "BNBUSDT": 2.1123944056466835,
+          "SOLUSDT": 1.5325047213676732,
+          "XRPUSDT": 1.4358879316940194,
+          "DOGEUSDT": 2.2941118386692287,
+          "SHIBUSDT": 2.9197536895585587,
+          "PEPEUSDT": 1.4186344978779242
+        },
+        "without_best_pct": 1.3379630113745857,
+        "top1_positive_contribution": 0.11057110186740872,
+        "mfe_median_pct": 9.65269901675514,
+        "mae_median_pct": -4.418339899947743,
+        "mfe_q10_q90": [
+          1.8273168886701385,
+          27.525276594496706
+        ],
+        "mae_q10_q90": [
+          -10.738814862961753,
+          -1.02600067490351
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": 3.403167932537052
+          },
+          "neutral": {
+            "count": 11,
+            "mean": -2.575144933027026
+          },
+          "up": {
+            "count": 17,
+            "mean": 2.2400460873422015
+          }
+        },
+        "median_days_between_events": 33.0
+      },
+      "common_period": {
+        "n": 125,
+        "months": 23,
+        "mean_pct": 1.736578934256826,
+        "ci95_pct": [
+          -5.986973742663854,
+          11.036614232934411
+        ],
+        "p": 0.7412587412587412,
+        "total_events": 125,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -2.792485202436874,
+        "raw_mean_pct": 3.6039514754747066,
+        "cost_hurdle_pct": {
+          "zero": 3.6039514754747066,
+          "base": 3.303951475474707,
+          "double": 3.0039514754747065
+        },
+        "effect_to_base_cost": 5.788596447522754,
+        "by_year": {
+          "2023": {
+            "count": 5,
+            "mean": -3.081369833408668
+          },
+          "2024": {
+            "count": 65,
+            "mean": 4.678771031305244
+          },
+          "2025": {
+            "count": 55,
+            "mean": -1.3025618379217145
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 16,
+            "mean": -0.28597390395545896
+          },
+          "BTCUSDT": {
+            "count": 17,
+            "mean": 1.1709153435565332
+          },
+          "DOGEUSDT": {
+            "count": 14,
+            "mean": 4.180322801279888
+          },
+          "ETHUSDT": {
+            "count": 18,
+            "mean": -0.7748622543173639
+          },
+          "PEPEUSDT": {
+            "count": 16,
+            "mean": 10.230044117759618
+          },
+          "SHIBUSDT": {
+            "count": 13,
+            "mean": 1.871605238554819
+          },
+          "SOLUSDT": {
+            "count": 19,
+            "mean": -5.118565098954689
+          },
+          "XRPUSDT": {
+            "count": 12,
+            "mean": 5.533879388291347
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.8256185735337238,
+          "ETHUSDT": 2.159064367848745,
+          "BNBUSDT": 2.0334674242696384,
+          "SOLUSDT": 2.9653311666249276,
+          "XRPUSDT": 1.3333257886956373,
+          "DOGEUSDT": 1.4283589870647284,
+          "SHIBUSDT": 1.7209062382222375,
+          "PEPEUSDT": 0.4898317513573329
+        },
+        "without_best_pct": -0.32279553187092097,
+        "top1_positive_contribution": 0.4086506120777988,
+        "mfe_median_pct": 7.959479015918958,
+        "mae_median_pct": -8.567293777134587,
+        "mfe_q10_q90": [
+          0.9568732165763417,
+          28.47741870665449
+        ],
+        "mae_q10_q90": [
+          -21.175774753762596,
+          -1.3447067129325523
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": -8.050153524579777
+          },
+          "neutral": {
+            "count": 36,
+            "mean": -8.838391450035063
+          },
+          "up": {
+            "count": 52,
+            "mean": 13.006768627586537
+          }
+        },
+        "median_days_between_events": 42.166666666666664
+      },
+      "validation_events_per_year_universe": 58.666666666666664,
+      "validation_events_per_year_per_symbol": 7.333333333333333,
+      "holm_p": 1.0,
+      "class": "WEAK"
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "discovery": {
+        "n": 35,
+        "months": 8,
+        "mean_pct": 0.06202417050866431,
+        "ci95_pct": [
+          -6.751777533443531,
+          9.729251902558161
+        ],
+        "p": 0.987012987012987,
+        "total_events": 35,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -1.8912099829094529,
+        "raw_mean_pct": 1.028865727789372,
+        "cost_hurdle_pct": {
+          "zero": 1.028865727789372,
+          "base": 0.728865727789372,
+          "double": 0.42886572778937204
+        },
+        "effect_to_base_cost": 0.20674723502888104,
+        "by_year": {
+          "2022": {
+            "count": 35,
+            "mean": 0.06202417050866436
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 5,
+            "mean": -0.3194601865365666
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": -1.739299136708262
+          },
+          "DOGEUSDT": {
+            "count": 5,
+            "mean": 7.651550777373011
+          },
+          "ETHUSDT": {
+            "count": 6,
+            "mean": -1.0691096229477661
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": 0.9899019248332601
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": 0.6598460308462135
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": -5.80728731725393
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.29445298434310613,
+          "ETHUSDT": 0.296051851913443,
+          "BNBUSDT": 0.12560489668286903,
+          "SOLUSDT": -0.061663110940483865,
+          "XRPUSDT": 1.04024275180243,
+          "DOGEUSDT": -1.2028969306353934,
+          "SHIBUSDT": -0.05770199133967055,
+          "PEPEUSDT": 0.06202417050866431
+        },
+        "without_best_pct": -1.9411616281542838,
+        "top1_positive_contribution": 0.3685956436127693,
+        "mfe_median_pct": 11.219672124606351,
+        "mae_median_pct": -10.79672375279227,
+        "mfe_q10_q90": [
+          2.13045897175399,
+          32.87706961253442
+        ],
+        "mae_q10_q90": [
+          -25.538547462413387,
+          -3.701135328172351
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 18,
+            "mean": -2.1756435313659015
+          },
+          "neutral": {
+            "count": 2,
+            "mean": -4.552424986644126
+          },
+          "up": {
+            "count": 11,
+            "mean": 5.217679641137344
+          }
+        },
+        "median_days_between_events": 36.0
+      },
+      "validation": {
+        "n": 144,
+        "months": 32,
+        "mean_pct": 1.9941605846250974,
+        "ci95_pct": [
+          -3.183556052953299,
+          7.996910296052715
+        ],
+        "p": 0.5204795204795205,
+        "total_events": 144,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -1.9895114844284922,
+        "raw_mean_pct": 3.6822891599427527,
+        "cost_hurdle_pct": {
+          "zero": 3.6822891599427527,
+          "base": 3.382289159942753,
+          "double": 3.0822891599427527
+        },
+        "effect_to_base_cost": 6.647201948750324,
+        "by_year": {
+          "2023": {
+            "count": 46,
+            "mean": -1.826720518426618
+          },
+          "2024": {
+            "count": 53,
+            "mean": 8.95911341709272
+          },
+          "2025": {
+            "count": 45,
+            "mean": -2.303216512717239
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 20,
+            "mean": -2.1148522581574314
+          },
+          "BTCUSDT": {
+            "count": 18,
+            "mean": 1.388515738488263
+          },
+          "DOGEUSDT": {
+            "count": 16,
+            "mean": 4.354544766872101
+          },
+          "ETHUSDT": {
+            "count": 22,
+            "mean": -0.5401415107092009
+          },
+          "PEPEUSDT": {
+            "count": 15,
+            "mean": 2.7286984318183496
+          },
+          "SHIBUSDT": {
+            "count": 16,
+            "mean": 8.095861249834243
+          },
+          "SOLUSDT": {
+            "count": 23,
+            "mean": -1.4297870180383219
+          },
+          "XRPUSDT": {
+            "count": 14,
+            "mean": 7.792437711591496
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 2.0806812769303598,
+          "ETHUSDT": 2.4511658805050525,
+          "BNBUSDT": 2.6569045915255045,
+          "SOLUSDT": 2.6449936000073997,
+          "XRPUSDT": 1.3697307401825616,
+          "DOGEUSDT": 1.699112561844222,
+          "SHIBUSDT": 1.231448001473954,
+          "PEPEUSDT": 1.9087492070444863
+        },
+        "without_best_pct": 0.7069179293689455,
+        "top1_positive_contribution": 0.337886678962375,
+        "mfe_median_pct": 7.120709590851826,
+        "mae_median_pct": -6.907177546133465,
+        "mfe_q10_q90": [
+          1.1008377574251316,
+          26.445186599358124
+        ],
+        "mae_q10_q90": [
+          -16.80992510571666,
+          -1.326902923065526
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 24,
+            "mean": 0.5595265104470365
+          },
+          "neutral": {
+            "count": 31,
+            "mean": -3.3864872771140817
+          },
+          "up": {
+            "count": 71,
+            "mean": 4.981948031451168
+          }
+        },
+        "median_days_between_events": 47.0
+      },
+      "diagnostic_2026": {
+        "n": 44,
+        "months": 7,
+        "mean_pct": 1.7111508222951919,
+        "ci95_pct": [
+          -2.368924626322311,
+          6.442296516228652
+        ],
+        "p": 0.46553446553446554,
+        "total_events": 44,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -0.8313251205358902,
+        "raw_mean_pct": 1.8102815839776534,
+        "cost_hurdle_pct": {
+          "zero": 1.8102815839776534,
+          "base": 1.5102815839776533,
+          "double": 1.2102815839776535
+        },
+        "effect_to_base_cost": 5.703836074317307,
+        "by_year": {
+          "2026": {
+            "count": 44,
+            "mean": 1.7111508222951917
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 3,
+            "mean": 6.606493014062738
+          },
+          "BTCUSDT": {
+            "count": 5,
+            "mean": 6.003502751249476
+          },
+          "DOGEUSDT": {
+            "count": 6,
+            "mean": -1.0148860308982324
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": 4.236752253926905
+          },
+          "PEPEUSDT": {
+            "count": 7,
+            "mean": -2.052666211205575
+          },
+          "SHIBUSDT": {
+            "count": 6,
+            "mean": -2.701818753319916
+          },
+          "SOLUSDT": {
+            "count": 7,
+            "mean": 4.388906517176327
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": 2.043285735286387
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.1608492929420782,
+          "ETHUSDT": 1.3873557669577923,
+          "BNBUSDT": 1.3529550521658587,
+          "SOLUSDT": 1.2045483935338956,
+          "XRPUSDT": 1.6685694231937567,
+          "DOGEUSDT": 2.1415776938520485,
+          "SHIBUSDT": 2.4079354921291567,
+          "PEPEUSDT": 2.4232243151196613
+        },
+        "without_best_pct": 1.1717238875805633,
+        "top1_positive_contribution": 0.12340734504256128,
+        "mfe_median_pct": 6.575212784643247,
+        "mae_median_pct": -4.950764023610726,
+        "mfe_q10_q90": [
+          1.7637153841045383,
+          25.15006958204001
+        ],
+        "mae_q10_q90": [
+          -13.402975490372732,
+          -0.6892224056078653
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": 2.9761233632096014
+          },
+          "neutral": {
+            "count": 7,
+            "mean": 2.1229679477480246
+          },
+          "up": {
+            "count": 18,
+            "mean": -0.6251877941349745
+          }
+        },
+        "median_days_between_events": 34.0
+      },
+      "common_period": {
+        "n": 103,
+        "months": 22,
+        "mean_pct": 3.0153837586619154,
+        "ci95_pct": [
+          -4.21209032102832,
+          10.161566181146801
+        ],
+        "p": 0.45854145854145856,
+        "total_events": 103,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -1.9952832593733287,
+        "raw_mean_pct": 4.384858480670411,
+        "cost_hurdle_pct": {
+          "zero": 4.384858480670411,
+          "base": 4.084858480670412,
+          "double": 3.7848584806704113
+        },
+        "effect_to_base_cost": 10.051279195539719,
+        "by_year": {
+          "2023": {
+            "count": 5,
+            "mean": -12.12074817829222
+          },
+          "2024": {
+            "count": 53,
+            "mean": 8.95911341709272
+          },
+          "2025": {
+            "count": 45,
+            "mean": -2.303216512717239
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 15,
+            "mean": -2.6363927418993276
+          },
+          "BTCUSDT": {
+            "count": 13,
+            "mean": -0.05874442521039883
+          },
+          "DOGEUSDT": {
+            "count": 11,
+            "mean": 8.850889735540479
+          },
+          "ETHUSDT": {
+            "count": 14,
+            "mean": 0.9521928906258669
+          },
+          "PEPEUSDT": {
+            "count": 15,
+            "mean": 2.7286984318183496
+          },
+          "SHIBUSDT": {
+            "count": 10,
+            "mean": 14.598546877146811
+          },
+          "SOLUSDT": {
+            "count": 15,
+            "mean": -4.374557329822795
+          },
+          "XRPUSDT": {
+            "count": 10,
+            "mean": 11.890602293729355
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 3.459424496332361,
+          "ETHUSDT": 3.339930636779945,
+          "BNBUSDT": 3.978754753075764,
+          "SOLUSDT": 4.275032807835446,
+          "XRPUSDT": 2.06105918499875,
+          "DOGEUSDT": 2.317660217948174,
+          "SHIBUSDT": 1.769882348072142,
+          "PEPEUSDT": 3.0642505757375234
+        },
+        "without_best_pct": 1.22073202799924,
+        "top1_positive_contribution": 0.3958704191103458,
+        "mfe_median_pct": 8.160930810210143,
+        "mae_median_pct": -9.060835888333084,
+        "mfe_q10_q90": [
+          1.1832891286232816,
+          26.757255676710024
+        ],
+        "mae_q10_q90": [
+          -17.009402764443227,
+          -1.9620369052280586
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": 0.29440037228076094
+          },
+          "neutral": {
+            "count": 28,
+            "mean": -4.696252443301655
+          },
+          "up": {
+            "count": 48,
+            "mean": 9.140034747300588
+          }
+        },
+        "median_days_between_events": 47.0
+      },
+      "validation_events_per_year_universe": 48.0,
+      "validation_events_per_year_per_symbol": 6.0,
+      "holm_p": 1.0,
+      "class": "WEAK"
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "4h",
+      "discovery": {
+        "n": 38,
+        "months": 8,
+        "mean_pct": -4.1207631186799745,
+        "ci95_pct": [
+          -10.347273296880216,
+          1.819934407912239
+        ],
+        "p": 0.17282717282717283,
+        "total_events": 38,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -2.264286755540108,
+        "raw_mean_pct": -5.5155545147301765,
+        "cost_hurdle_pct": {
+          "zero": -5.5155545147301765,
+          "base": -5.815554514730176,
+          "double": -6.115554514730176
+        },
+        "effect_to_base_cost": -13.735877062266582,
+        "by_year": {
+          "2022": {
+            "count": 38,
+            "mean": -4.120763118679975
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 7,
+            "mean": -1.756318149286337
+          },
+          "BTCUSDT": {
+            "count": 5,
+            "mean": -2.2759500627068667
+          },
+          "DOGEUSDT": {
+            "count": 5,
+            "mean": -14.16248022721419
+          },
+          "ETHUSDT": {
+            "count": 6,
+            "mean": -3.614271592768899
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": 0.15946671367993592
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": -6.083055817377557
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": -0.9113044818140817
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -4.40028024837287,
+          "ETHUSDT": -4.215730279788302,
+          "BNBUSDT": -4.65467004725273,
+          "SOLUSDT": -3.752833237674178,
+          "XRPUSDT": -4.607044730326322,
+          "DOGEUSDT": -2.5992908295081243,
+          "SHIBUSDT": -4.624319569545846,
+          "PEPEUSDT": -4.1207631186799745
+        },
+        "without_best_pct": -4.738875375071224,
+        "top1_positive_contribution": 0.18647962280056588,
+        "mfe_median_pct": 12.663065797732509,
+        "mae_median_pct": -5.759880588342625,
+        "mfe_q10_q90": [
+          1.9282117218309625,
+          34.35480220069307
+        ],
+        "mae_q10_q90": [
+          -21.42618836086657,
+          -1.4628327263603698
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 21,
+            "mean": -2.600178577310332
+          },
+          "neutral": {
+            "count": 3,
+            "mean": -0.6748666377333615
+          },
+          "up": {
+            "count": 9,
+            "mean": -9.842322017731961
+          }
+        },
+        "median_days_between_events": 36.0
+      },
+      "validation": {
+        "n": 176,
+        "months": 33,
+        "mean_pct": -1.0626602274877839,
+        "ci95_pct": [
+          -8.324504656443318,
+          4.488204665702801
+        ],
+        "p": 0.7752247752247752,
+        "total_events": 176,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 2.2795926913025744,
+        "raw_mean_pct": -2.797673474739506,
+        "cost_hurdle_pct": {
+          "zero": -2.797673474739506,
+          "base": -3.097673474739506,
+          "double": -3.397673474739506
+        },
+        "effect_to_base_cost": -3.542200758292613,
+        "by_year": {
+          "2023": {
+            "count": 56,
+            "mean": 0.811625284130298
+          },
+          "2024": {
+            "count": 65,
+            "mean": -4.678771031305244
+          },
+          "2025": {
+            "count": 55,
+            "mean": 1.3025618379217145
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 22,
+            "mean": -0.1103469289137485
+          },
+          "BTCUSDT": {
+            "count": 24,
+            "mean": -1.0362174220256215
+          },
+          "DOGEUSDT": {
+            "count": 20,
+            "mean": -1.7616743530609753
+          },
+          "ETHUSDT": {
+            "count": 27,
+            "mean": 0.9805469054694432
+          },
+          "PEPEUSDT": {
+            "count": 16,
+            "mean": -10.230044117759618
+          },
+          "SHIBUSDT": {
+            "count": 20,
+            "mean": -1.2146883497497443
+          },
+          "SOLUSDT": {
+            "count": 29,
+            "mean": 3.559930548941592
+          },
+          "XRPUSDT": {
+            "count": 18,
+            "mean": -3.679785661096963
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -1.0668354072975983,
+          "ETHUSDT": -1.4329058153390928,
+          "BNBUSDT": -1.198704984426931,
+          "SOLUSDT": -1.9745999044704496,
+          "XRPUSDT": -0.764506697076611,
+          "DOGEUSDT": -0.9730430319014769,
+          "SHIBUSDT": -1.0431694425824036,
+          "PEPEUSDT": -0.14592183846059997
+        },
+        "without_best_pct": -1.3982703866177661,
+        "top1_positive_contribution": 0.1111595492123782,
+        "mfe_median_pct": 7.274557638619505,
+        "mae_median_pct": -7.468953164213705,
+        "mfe_q10_q90": [
+          1.0133990371701818,
+          26.023926886875856
+        ],
+        "mae_q10_q90": [
+          -20.512371191133553,
+          -0.9732365028032319
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 33,
+            "mean": 5.145999271283628
+          },
+          "neutral": {
+            "count": 41,
+            "mean": 7.361334647401408
+          },
+          "up": {
+            "count": 78,
+            "mean": -8.125534338526313
+          }
+        },
+        "median_days_between_events": 43.33333333333333
+      },
+      "diagnostic_2026": {
+        "n": 46,
+        "months": 7,
+        "mean_pct": -1.8445252659669713,
+        "ci95_pct": [
+          -6.77851886805047,
+          2.533129031492106
+        ],
+        "p": 0.43456543456543456,
+        "total_events": 46,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.224908597026876,
+        "raw_mean_pct": -2.26260635983228,
+        "cost_hurdle_pct": {
+          "zero": -2.26260635983228,
+          "base": -2.5626063598322797,
+          "double": -2.86260635983228
+        },
+        "effect_to_base_cost": -6.148417553223238,
+        "by_year": {
+          "2026": {
+            "count": 46,
+            "mean": -1.844525265966971
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 6,
+            "mean": -0.058731001435552876
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": -6.86240548936045
+          },
+          "DOGEUSDT": {
+            "count": 6,
+            "mean": 1.152718552048081
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": -2.7877100013951837
+          },
+          "PEPEUSDT": {
+            "count": 7,
+            "mean": -4.217345259605946
+          },
+          "SHIBUSDT": {
+            "count": 7,
+            "mean": 4.146033094043303
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": -3.9246622299622893
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": -5.195351407005176
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -1.3666319113580683,
+          "ETHUSDT": -1.729502737256213,
+          "BNBUSDT": -2.1123944056466835,
+          "SOLUSDT": -1.5325047213676732,
+          "XRPUSDT": -1.4358879316940194,
+          "DOGEUSDT": -2.2941118386692287,
+          "SHIBUSDT": -2.9197536895585587,
+          "PEPEUSDT": -1.4186344978779242
+        },
+        "without_best_pct": -2.30530338899985,
+        "top1_positive_contribution": 0.1368942506764424,
+        "mfe_median_pct": 9.65269901675514,
+        "mae_median_pct": -4.418339899947743,
+        "mfe_q10_q90": [
+          1.8273168886701385,
+          27.525276594496706
+        ],
+        "mae_q10_q90": [
+          -10.738814862961753,
+          -1.02600067490351
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": -3.403167932537052
+          },
+          "neutral": {
+            "count": 11,
+            "mean": 2.575144933027026
+          },
+          "up": {
+            "count": 17,
+            "mean": -2.2400460873422015
+          }
+        },
+        "median_days_between_events": 33.0
+      },
+      "common_period": {
+        "n": 125,
+        "months": 23,
+        "mean_pct": -1.736578934256826,
+        "ci95_pct": [
+          -11.036614232934415,
+          5.986973742663852
+        ],
+        "p": 0.7412587412587412,
+        "total_events": 125,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 2.792485202436874,
+        "raw_mean_pct": -3.6039514754747066,
+        "cost_hurdle_pct": {
+          "zero": -3.6039514754747066,
+          "base": -3.9039514754747064,
+          "double": -4.203951475474707
+        },
+        "effect_to_base_cost": -5.788596447522754,
+        "by_year": {
+          "2023": {
+            "count": 5,
+            "mean": 3.081369833408668
+          },
+          "2024": {
+            "count": 65,
+            "mean": -4.678771031305244
+          },
+          "2025": {
+            "count": 55,
+            "mean": 1.3025618379217145
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 16,
+            "mean": 0.28597390395545896
+          },
+          "BTCUSDT": {
+            "count": 17,
+            "mean": -1.1709153435565332
+          },
+          "DOGEUSDT": {
+            "count": 14,
+            "mean": -4.180322801279888
+          },
+          "ETHUSDT": {
+            "count": 18,
+            "mean": 0.7748622543173639
+          },
+          "PEPEUSDT": {
+            "count": 16,
+            "mean": -10.230044117759618
+          },
+          "SHIBUSDT": {
+            "count": 13,
+            "mean": -1.871605238554819
+          },
+          "SOLUSDT": {
+            "count": 19,
+            "mean": 5.118565098954689
+          },
+          "XRPUSDT": {
+            "count": 12,
+            "mean": -5.533879388291347
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -1.8256185735337238,
+          "ETHUSDT": -2.159064367848745,
+          "BNBUSDT": -2.0334674242696384,
+          "SOLUSDT": -2.9653311666249276,
+          "XRPUSDT": -1.3333257886956373,
+          "DOGEUSDT": -1.4283589870647284,
+          "SHIBUSDT": -1.7209062382222375,
+          "PEPEUSDT": -0.4898317513573329
+        },
+        "without_best_pct": -2.215657132277116,
+        "top1_positive_contribution": 0.13967405414604755,
+        "mfe_median_pct": 7.959479015918958,
+        "mae_median_pct": -8.567293777134587,
+        "mfe_q10_q90": [
+          0.9568732165763417,
+          28.47741870665449
+        ],
+        "mae_q10_q90": [
+          -21.175774753762596,
+          -1.3447067129325523
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": 8.050153524579777
+          },
+          "neutral": {
+            "count": 36,
+            "mean": 8.838391450035063
+          },
+          "up": {
+            "count": 52,
+            "mean": -13.006768627586537
+          }
+        },
+        "median_days_between_events": 42.166666666666664
+      },
+      "validation_events_per_year_universe": 58.666666666666664,
+      "validation_events_per_year_per_symbol": 7.333333333333333,
+      "holm_p": 1.0,
+      "class": "REJECT"
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "discovery": {
+        "n": 35,
+        "months": 8,
+        "mean_pct": -0.06202417050866431,
+        "ci95_pct": [
+          -9.729251902558161,
+          6.75177753344353
+        ],
+        "p": 0.987012987012987,
+        "total_events": 35,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.8912099829094529,
+        "raw_mean_pct": -1.028865727789372,
+        "cost_hurdle_pct": {
+          "zero": -1.028865727789372,
+          "base": -1.328865727789372,
+          "double": -1.628865727789372
+        },
+        "effect_to_base_cost": -0.20674723502888104,
+        "by_year": {
+          "2022": {
+            "count": 35,
+            "mean": -0.06202417050866436
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 5,
+            "mean": 0.3194601865365666
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": 1.739299136708262
+          },
+          "DOGEUSDT": {
+            "count": 5,
+            "mean": -7.651550777373011
+          },
+          "ETHUSDT": {
+            "count": 6,
+            "mean": 1.0691096229477661
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": -0.9899019248332601
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": -0.6598460308462135
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": 5.80728731725393
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.29445298434310613,
+          "ETHUSDT": -0.296051851913443,
+          "BNBUSDT": -0.12560489668286903,
+          "SOLUSDT": 0.061663110940483865,
+          "XRPUSDT": -1.04024275180243,
+          "DOGEUSDT": 1.2028969306353934,
+          "SHIBUSDT": 0.05770199133967055,
+          "PEPEUSDT": -0.06202417050866431
+        },
+        "without_best_pct": -0.7236455632147598,
+        "top1_positive_contribution": 0.12273597129671455,
+        "mfe_median_pct": 11.219672124606351,
+        "mae_median_pct": -10.79672375279227,
+        "mfe_q10_q90": [
+          2.13045897175399,
+          32.87706961253442
+        ],
+        "mae_q10_q90": [
+          -25.538547462413387,
+          -3.701135328172351
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 18,
+            "mean": 2.1756435313659015
+          },
+          "neutral": {
+            "count": 2,
+            "mean": 4.552424986644126
+          },
+          "up": {
+            "count": 11,
+            "mean": -5.217679641137344
+          }
+        },
+        "median_days_between_events": 36.0
+      },
+      "validation": {
+        "n": 144,
+        "months": 32,
+        "mean_pct": -1.9941605846250974,
+        "ci95_pct": [
+          -7.996910296052715,
+          3.183556052953298
+        ],
+        "p": 0.5204795204795205,
+        "total_events": 144,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.9895114844284922,
+        "raw_mean_pct": -3.6822891599427527,
+        "cost_hurdle_pct": {
+          "zero": -3.6822891599427527,
+          "base": -3.9822891599427526,
+          "double": -4.282289159942753
+        },
+        "effect_to_base_cost": -6.647201948750324,
+        "by_year": {
+          "2023": {
+            "count": 46,
+            "mean": 1.826720518426618
+          },
+          "2024": {
+            "count": 53,
+            "mean": -8.95911341709272
+          },
+          "2025": {
+            "count": 45,
+            "mean": 2.303216512717239
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 20,
+            "mean": 2.1148522581574314
+          },
+          "BTCUSDT": {
+            "count": 18,
+            "mean": -1.388515738488263
+          },
+          "DOGEUSDT": {
+            "count": 16,
+            "mean": -4.354544766872101
+          },
+          "ETHUSDT": {
+            "count": 22,
+            "mean": 0.5401415107092009
+          },
+          "PEPEUSDT": {
+            "count": 15,
+            "mean": -2.7286984318183496
+          },
+          "SHIBUSDT": {
+            "count": 16,
+            "mean": -8.095861249834243
+          },
+          "SOLUSDT": {
+            "count": 23,
+            "mean": 1.4297870180383219
+          },
+          "XRPUSDT": {
+            "count": 14,
+            "mean": -7.792437711591496
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -2.0806812769303598,
+          "ETHUSDT": -2.4511658805050525,
+          "BNBUSDT": -2.6569045915255045,
+          "SOLUSDT": -2.6449936000073997,
+          "XRPUSDT": -1.3697307401825616,
+          "DOGEUSDT": -1.699112561844222,
+          "SHIBUSDT": -1.231448001473954,
+          "PEPEUSDT": -1.9087492070444863
+        },
+        "without_best_pct": -2.3367626139345403,
+        "top1_positive_contribution": 0.13700854394821588,
+        "mfe_median_pct": 7.120709590851826,
+        "mae_median_pct": -6.907177546133465,
+        "mfe_q10_q90": [
+          1.1008377574251316,
+          26.445186599358124
+        ],
+        "mae_q10_q90": [
+          -16.80992510571666,
+          -1.326902923065526
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 24,
+            "mean": -0.5595265104470365
+          },
+          "neutral": {
+            "count": 31,
+            "mean": 3.3864872771140817
+          },
+          "up": {
+            "count": 71,
+            "mean": -4.981948031451168
+          }
+        },
+        "median_days_between_events": 47.0
+      },
+      "diagnostic_2026": {
+        "n": 44,
+        "months": 7,
+        "mean_pct": -1.7111508222951919,
+        "ci95_pct": [
+          -6.4422965162286525,
+          2.368924626322311
+        ],
+        "p": 0.46553446553446554,
+        "total_events": 44,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 0.8313251205358902,
+        "raw_mean_pct": -1.8102815839776534,
+        "cost_hurdle_pct": {
+          "zero": -1.8102815839776534,
+          "base": -2.1102815839776534,
+          "double": -2.4102815839776532
+        },
+        "effect_to_base_cost": -5.703836074317307,
+        "by_year": {
+          "2026": {
+            "count": 44,
+            "mean": -1.7111508222951917
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 3,
+            "mean": -6.606493014062738
+          },
+          "BTCUSDT": {
+            "count": 5,
+            "mean": -6.003502751249476
+          },
+          "DOGEUSDT": {
+            "count": 6,
+            "mean": 1.0148860308982324
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": -4.236752253926905
+          },
+          "PEPEUSDT": {
+            "count": 7,
+            "mean": 2.052666211205575
+          },
+          "SHIBUSDT": {
+            "count": 6,
+            "mean": 2.701818753319916
+          },
+          "SOLUSDT": {
+            "count": 7,
+            "mean": -4.388906517176327
+          },
+          "XRPUSDT": {
+            "count": 5,
+            "mean": -2.043285735286387
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -1.1608492929420782,
+          "ETHUSDT": -1.3873557669577923,
+          "BNBUSDT": -1.3529550521658587,
+          "SOLUSDT": -1.2045483935338956,
+          "XRPUSDT": -1.6685694231937567,
+          "DOGEUSDT": -2.1415776938520485,
+          "SHIBUSDT": -2.4079354921291567,
+          "PEPEUSDT": -2.4232243151196613
+        },
+        "without_best_pct": -2.012415367990277,
+        "top1_positive_contribution": 0.08885612377576343,
+        "mfe_median_pct": 6.575212784643247,
+        "mae_median_pct": -4.950764023610726,
+        "mfe_q10_q90": [
+          1.7637153841045383,
+          25.15006958204001
+        ],
+        "mae_q10_q90": [
+          -13.402975490372732,
+          -0.6892224056078653
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": -2.9761233632096014
+          },
+          "neutral": {
+            "count": 7,
+            "mean": -2.1229679477480246
+          },
+          "up": {
+            "count": 18,
+            "mean": 0.6251877941349745
+          }
+        },
+        "median_days_between_events": 34.0
+      },
+      "common_period": {
+        "n": 103,
+        "months": 22,
+        "mean_pct": -3.0153837586619154,
+        "ci95_pct": [
+          -10.161566181146801,
+          4.21209032102832
+        ],
+        "p": 0.45854145854145856,
+        "total_events": 103,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.9952832593733287,
+        "raw_mean_pct": -4.384858480670411,
+        "cost_hurdle_pct": {
+          "zero": -4.384858480670411,
+          "base": -4.684858480670411,
+          "double": -4.984858480670411
+        },
+        "effect_to_base_cost": -10.051279195539719,
+        "by_year": {
+          "2023": {
+            "count": 5,
+            "mean": 12.12074817829222
+          },
+          "2024": {
+            "count": 53,
+            "mean": -8.95911341709272
+          },
+          "2025": {
+            "count": 45,
+            "mean": 2.303216512717239
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 15,
+            "mean": 2.6363927418993276
+          },
+          "BTCUSDT": {
+            "count": 13,
+            "mean": 0.05874442521039883
+          },
+          "DOGEUSDT": {
+            "count": 11,
+            "mean": -8.850889735540479
+          },
+          "ETHUSDT": {
+            "count": 14,
+            "mean": -0.9521928906258669
+          },
+          "PEPEUSDT": {
+            "count": 15,
+            "mean": -2.7286984318183496
+          },
+          "SHIBUSDT": {
+            "count": 10,
+            "mean": -14.598546877146811
+          },
+          "SOLUSDT": {
+            "count": 15,
+            "mean": 4.374557329822795
+          },
+          "XRPUSDT": {
+            "count": 10,
+            "mean": -11.890602293729355
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -3.459424496332361,
+          "ETHUSDT": -3.339930636779945,
+          "BNBUSDT": -3.978754753075764,
+          "SOLUSDT": -4.275032807835446,
+          "XRPUSDT": -2.06105918499875,
+          "DOGEUSDT": -2.317660217948174,
+          "SHIBUSDT": -1.769882348072142,
+          "PEPEUSDT": -3.0642505757375234
+        },
+        "without_best_pct": -3.505710360282378,
+        "top1_positive_contribution": 0.18100768151293292,
+        "mfe_median_pct": 8.160930810210143,
+        "mae_median_pct": -9.060835888333084,
+        "mfe_q10_q90": [
+          1.1832891286232816,
+          26.757255676710024
+        ],
+        "mae_q10_q90": [
+          -17.009402764443227,
+          -1.9620369052280586
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": -0.29440037228076094
+          },
+          "neutral": {
+            "count": 28,
+            "mean": 4.696252443301655
+          },
+          "up": {
+            "count": 48,
+            "mean": -9.140034747300588
+          }
+        },
+        "median_days_between_events": 47.0
+      },
+      "validation_events_per_year_universe": 48.0,
+      "validation_events_per_year_per_symbol": 6.0,
+      "holm_p": 1.0,
+      "class": "REJECT"
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "4h",
+      "discovery": {
+        "n": 24,
+        "months": 8,
+        "mean_pct": 1.1760288854249545,
+        "ci95_pct": [
+          -10.963559147498017,
+          13.383696227684249
+        ],
+        "p": 0.4115884115884116,
+        "total_events": 36,
+        "unmatched": 12,
+        "outcome_unavailable": 0,
+        "unmatched_control": 12,
+        "effect_median_pct": -0.320565742268869,
+        "raw_mean_pct": 10.666870209215185,
+        "cost_hurdle_pct": {
+          "zero": 10.666870209215185,
+          "base": 10.366870209215184,
+          "double": 10.066870209215185
+        },
+        "effect_to_base_cost": 3.9200962847498486,
+        "by_year": {
+          "2022": {
+            "count": 24,
+            "mean": 1.1760288854249548
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 4,
+            "mean": 1.6545923109726068
+          },
+          "BTCUSDT": {
+            "count": 3,
+            "mean": 3.3179702611569777
+          },
+          "DOGEUSDT": {
+            "count": 4,
+            "mean": -2.348213350236186
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": 8.951588670921934
+          },
+          "SHIBUSDT": {
+            "count": 3,
+            "mean": -1.9664430347040078
+          },
+          "SOLUSDT": {
+            "count": 2,
+            "mean": -6.476303360312816
+          },
+          "XRPUSDT": {
+            "count": 3,
+            "mean": -1.6202469686965746
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.8700372603203801,
+          "ETHUSDT": -0.8701710581268822,
+          "BNBUSDT": 1.0803162003154243,
+          "SOLUSDT": 1.871695453219297,
+          "XRPUSDT": 1.575496864585173,
+          "DOGEUSDT": 1.8808773325571821,
+          "SHIBUSDT": 1.624953445443378,
+          "PEPEUSDT": 1.1760288854249545
+        },
+        "without_best_pct": -0.22861151340173388,
+        "top1_positive_contribution": 0.1732959626590285,
+        "mfe_median_pct": 11.129403105809327,
+        "mae_median_pct": -3.0490426384973235,
+        "mfe_q10_q90": [
+          2.1227428011620963,
+          37.49714230513834
+        ],
+        "mae_q10_q90": [
+          -14.195710265884484,
+          -1.037297186966273
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 8,
+            "mean": -1.8245805304945466
+          },
+          "neutral": {
+            "count": 8,
+            "mean": 6.762322434339281
+          },
+          "up": {
+            "count": 5,
+            "mean": -4.246230552805979
+          }
+        },
+        "median_days_between_events": 60.666666666666664
+      },
+      "validation": {
+        "n": 112,
+        "months": 31,
+        "mean_pct": -0.9055565844230188,
+        "ci95_pct": [
+          -5.296707513786528,
+          3.1370450343616265
+        ],
+        "p": 0.6753246753246753,
+        "total_events": 133,
+        "unmatched": 21,
+        "outcome_unavailable": 0,
+        "unmatched_control": 21,
+        "effect_median_pct": 1.8263007608708062,
+        "raw_mean_pct": 2.357785124174488,
+        "cost_hurdle_pct": {
+          "zero": 2.357785124174488,
+          "base": 2.057785124174488,
+          "double": 1.7577851241744877
+        },
+        "effect_to_base_cost": -3.0185219480767294,
+        "by_year": {
+          "2023": {
+            "count": 33,
+            "mean": 3.441991671865489
+          },
+          "2024": {
+            "count": 36,
+            "mean": -7.07807566184128
+          },
+          "2025": {
+            "count": 43,
+            "mean": 0.9256432837057403
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 11,
+            "mean": 4.510925729509907
+          },
+          "BTCUSDT": {
+            "count": 20,
+            "mean": -2.224710071107486
+          },
+          "DOGEUSDT": {
+            "count": 15,
+            "mean": 4.078889539586189
+          },
+          "ETHUSDT": {
+            "count": 15,
+            "mean": 0.8404798230226262
+          },
+          "PEPEUSDT": {
+            "count": 9,
+            "mean": -11.134905362360854
+          },
+          "SHIBUSDT": {
+            "count": 9,
+            "mean": 2.4852602146819702
+          },
+          "SOLUSDT": {
+            "count": 19,
+            "mean": 6.390424695943771
+          },
+          "XRPUSDT": {
+            "count": 14,
+            "mean": -15.993580170770807
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.6187840873176996,
+          "ETHUSDT": -1.1755622144403866,
+          "BNBUSDT": -1.495470499801852,
+          "SOLUSDT": -2.3961334051431162,
+          "XRPUSDT": 1.2498753564838079,
+          "DOGEUSDT": -1.6763472221564013,
+          "SHIBUSDT": -1.2018415474516102,
+          "PEPEUSDT": -0.011729992176023074
+        },
+        "without_best_pct": -1.4022875419150072,
+        "top1_positive_contribution": 0.1304812912091157,
+        "mfe_median_pct": 7.531314921178045,
+        "mae_median_pct": -4.9726484430729965,
+        "mfe_q10_q90": [
+          0.7247829411332108,
+          27.005276141706425
+        ],
+        "mae_q10_q90": [
+          -15.212346120210745,
+          -0.7985179250694793
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 17,
+            "mean": 5.64885755383127
+          },
+          "neutral": {
+            "count": 34,
+            "mean": 0.1310308522546159
+          },
+          "up": {
+            "count": 41,
+            "mean": -3.8393600835369974
+          }
+        },
+        "median_days_between_events": 45.16666666666667
+      },
+      "diagnostic_2026": {
+        "n": 32,
+        "months": 7,
+        "mean_pct": -2.8078089952084144,
+        "ci95_pct": [
+          -4.336932033352474,
+          -0.09642743849193462
+        ],
+        "p": 1.0,
+        "total_events": 40,
+        "unmatched": 8,
+        "outcome_unavailable": 0,
+        "unmatched_control": 8,
+        "effect_median_pct": -1.3323907627584168,
+        "raw_mean_pct": -0.9759505185653832,
+        "cost_hurdle_pct": {
+          "zero": -0.9759505185653832,
+          "base": -1.2759505185653832,
+          "double": -1.5759505185653833
+        },
+        "effect_to_base_cost": -9.359363317361382,
+        "by_year": {
+          "2026": {
+            "count": 32,
+            "mean": -2.8078089952084144
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 8,
+            "mean": -1.7659349896060454
+          },
+          "BTCUSDT": {
+            "count": 6,
+            "mean": 0.06714089414570575
+          },
+          "DOGEUSDT": {
+            "count": 3,
+            "mean": 10.073076595440446
+          },
+          "ETHUSDT": {
+            "count": 3,
+            "mean": -0.8043057451607897
+          },
+          "PEPEUSDT": {
+            "count": 1,
+            "mean": -61.68899601771496
+          },
+          "SHIBUSDT": {
+            "count": 2,
+            "mean": 7.99852563587801
+          },
+          "SOLUSDT": {
+            "count": 5,
+            "mean": -12.550010644041956
+          },
+          "XRPUSDT": {
+            "count": 4,
+            "mean": 1.127608030158655
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -3.4712589696747504,
+          "ETHUSDT": -3.015067952109893,
+          "BNBUSDT": -3.1551003304092045,
+          "SOLUSDT": -1.0036975787577587,
+          "XRPUSDT": -3.3700114274037105,
+          "DOGEUSDT": -4.140314401137607,
+          "SHIBUSDT": -3.5282313039475097,
+          "PEPEUSDT": -0.9084158654501384
+        },
+        "without_best_pct": -3.649394387499727,
+        "top1_positive_contribution": 0.19615153861865997,
+        "mfe_median_pct": 3.6470221817178183,
+        "mae_median_pct": -4.861706378625269,
+        "mfe_q10_q90": [
+          1.6237615113880532,
+          25.619523258405167
+        ],
+        "mae_q10_q90": [
+          -11.116945862032798,
+          -1.00820488177899
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 1,
+            "mean": 20.64262221368807
+          },
+          "neutral": {
+            "count": 13,
+            "mean": -8.147133078950253
+          },
+          "up": {
+            "count": 12,
+            "mean": -0.41521878323985684
+          }
+        },
+        "median_days_between_events": 47.66666666666667
+      },
+      "common_period": {
+        "n": 79,
+        "months": 20,
+        "mean_pct": -2.7216210459106227,
+        "ci95_pct": [
+          -8.680380951209488,
+          2.5383609700721
+        ],
+        "p": 0.8361638361638362,
+        "total_events": 92,
+        "unmatched": 13,
+        "outcome_unavailable": 0,
+        "unmatched_control": 13,
+        "effect_median_pct": 0.3450596194748048,
+        "raw_mean_pct": 2.160103970059122,
+        "cost_hurdle_pct": {
+          "zero": 2.160103970059122,
+          "base": 1.8601039700591218,
+          "double": 1.5601039700591217
+        },
+        "effect_to_base_cost": -9.07207015303541,
+        "by_year": {
+          "2024": {
+            "count": 36,
+            "mean": -7.07807566184128
+          },
+          "2025": {
+            "count": 43,
+            "mean": 0.9256432837057403
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 6,
+            "mean": 4.593190181733259
+          },
+          "BTCUSDT": {
+            "count": 16,
+            "mean": -3.7574348857210165
+          },
+          "DOGEUSDT": {
+            "count": 9,
+            "mean": 4.623690020839813
+          },
+          "ETHUSDT": {
+            "count": 9,
+            "mean": -0.1058847172790595
+          },
+          "PEPEUSDT": {
+            "count": 9,
+            "mean": -11.134905362360854
+          },
+          "SHIBUSDT": {
+            "count": 5,
+            "mean": -0.8865171010156594
+          },
+          "SOLUSDT": {
+            "count": 16,
+            "mean": 5.36800055981839
+          },
+          "XRPUSDT": {
+            "count": 9,
+            "mean": -22.705529829846398
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -2.4585572135778246,
+          "ETHUSDT": -3.057930002448967,
+          "BNBUSDT": -3.3228384070868326,
+          "SOLUSDT": -4.776128120381484,
+          "XRPUSDT": -0.1522613451188808,
+          "DOGEUSDT": -3.6660181830642506,
+          "SHIBUSDT": -2.845614555700824,
+          "PEPEUSDT": -1.6399130623670222
+        },
+        "without_best_pct": -3.4517902862067547,
+        "top1_positive_contribution": 0.10470758381297163,
+        "mfe_median_pct": 7.397959183673464,
+        "mae_median_pct": -5.56124947026182,
+        "mfe_q10_q90": [
+          0.8001243828987948,
+          27.573987953054516
+        ],
+        "mae_q10_q90": [
+          -15.979548395474378,
+          -0.9519568634358494
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 8,
+            "mean": 2.771994000085561
+          },
+          "neutral": {
+            "count": 24,
+            "mean": -0.3547273309414569
+          },
+          "up": {
+            "count": 31,
+            "mean": -5.437148403661048
+          }
+        },
+        "median_days_between_events": 42.833333333333336
+      },
+      "validation_events_per_year_universe": 44.333333333333336,
+      "validation_events_per_year_per_symbol": 5.541666666666667,
+      "holm_p": 1.0,
+      "class": "REJECT"
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "discovery": {
+        "n": 13,
+        "months": 7,
+        "mean_pct": 3.1005345391227035,
+        "ci95_pct": [
+          -4.509169603840627,
+          8.812361910765201
+        ],
+        "p": 0.15384615384615385,
+        "total_events": 27,
+        "unmatched": 14,
+        "outcome_unavailable": 0,
+        "unmatched_control": 14,
+        "effect_median_pct": 3.845873018173723,
+        "raw_mean_pct": 4.429768369302678,
+        "cost_hurdle_pct": {
+          "zero": 4.429768369302678,
+          "base": 4.1297683693026785,
+          "double": 3.8297683693026783
+        },
+        "effect_to_base_cost": 10.335115130409012,
+        "by_year": {
+          "2022": {
+            "count": 13,
+            "mean": 3.1005345391227044
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 2,
+            "mean": 12.451000058302403
+          },
+          "BTCUSDT": {
+            "count": 2,
+            "mean": 8.376343246047107
+          },
+          "DOGEUSDT": {
+            "count": 1,
+            "mean": 11.32594519309703
+          },
+          "ETHUSDT": {
+            "count": 3,
+            "mean": -2.2969616161346034
+          },
+          "SHIBUSDT": {
+            "count": 2,
+            "mean": 1.6895905706925003
+          },
+          "XRPUSDT": {
+            "count": 3,
+            "mean": -3.0539930287273624
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 2.141296592409176,
+          "ETHUSDT": 4.7197833856998965,
+          "BNBUSDT": 1.4004498992718495,
+          "SOLUSDT": 3.1005345391227035,
+          "XRPUSDT": 4.946892809477724,
+          "DOGEUSDT": 2.41508365129151,
+          "SHIBUSDT": 3.3570698061100144,
+          "PEPEUSDT": 3.1005345391227035
+        },
+        "without_best_pct": 2.013103875130598,
+        "top1_positive_contribution": 0.20885271243012915,
+        "mfe_median_pct": 7.38720872583043,
+        "mae_median_pct": -5.574330653198567,
+        "mfe_q10_q90": [
+          1.223097346711619,
+          31.56725843001906
+        ],
+        "mae_q10_q90": [
+          -16.001872139529894,
+          -0.8198147273845798
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 7,
+            "mean": 3.6906145544365545
+          },
+          "neutral": {
+            "count": 3,
+            "mean": -6.143247290527639
+          },
+          "up": {
+            "count": 1,
+            "mean": 16.149702507027975
+          }
+        },
+        "median_days_between_events": 113.0
+      },
+      "validation": {
+        "n": 82,
+        "months": 26,
+        "mean_pct": 4.775523227297285,
+        "ci95_pct": [
+          -1.0432357539304555,
+          10.993380531217284
+        ],
+        "p": 0.07592407592407592,
+        "total_events": 117,
+        "unmatched": 35,
+        "outcome_unavailable": 0,
+        "unmatched_control": 35,
+        "effect_median_pct": 4.881438350117834,
+        "raw_mean_pct": 6.804544320193681,
+        "cost_hurdle_pct": {
+          "zero": 6.804544320193681,
+          "base": 6.5045443201936815,
+          "double": 6.204544320193682
+        },
+        "effect_to_base_cost": 15.918410757657616,
+        "by_year": {
+          "2023": {
+            "count": 29,
+            "mean": 6.2737579971226705
+          },
+          "2024": {
+            "count": 20,
+            "mean": 2.049608150098074
+          },
+          "2025": {
+            "count": 33,
+            "mean": 5.110962415753282
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 10,
+            "mean": 3.8867668880640083
+          },
+          "BTCUSDT": {
+            "count": 13,
+            "mean": -1.6718986515528793
+          },
+          "DOGEUSDT": {
+            "count": 10,
+            "mean": 6.650340298555203
+          },
+          "ETHUSDT": {
+            "count": 10,
+            "mean": 3.5639803902606246
+          },
+          "PEPEUSDT": {
+            "count": 6,
+            "mean": 35.291282581551215
+          },
+          "SHIBUSDT": {
+            "count": 10,
+            "mean": -2.9113409881836967
+          },
+          "SOLUSDT": {
+            "count": 13,
+            "mean": 5.51521198147252
+          },
+          "XRPUSDT": {
+            "count": 10,
+            "mean": 1.7984669973153231
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 5.990254885631372,
+          "ETHUSDT": 4.943793065774598,
+          "BNBUSDT": 4.89896160774635,
+          "SOLUSDT": 4.636161577959921,
+          "XRPUSDT": 5.1890032592392235,
+          "DOGEUSDT": 4.51513196740035,
+          "SHIBUSDT": 5.843143257225197,
+          "PEPEUSDT": 2.3663843309088155
+        },
+        "without_best_pct": 1.9903344209213274,
+        "top1_positive_contribution": 0.3200760781403782,
+        "mfe_median_pct": 8.741170184636005,
+        "mae_median_pct": -4.827549608902493,
+        "mfe_q10_q90": [
+          1.1586702090393073,
+          25.56781891469911
+        ],
+        "mae_q10_q90": [
+          -12.491745238004352,
+          -0.49834133799525737
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 17,
+            "mean": 4.610360669095851
+          },
+          "neutral": {
+            "count": 18,
+            "mean": -0.5749646024361934
+          },
+          "up": {
+            "count": 34,
+            "mean": 10.155906428758431
+          }
+        },
+        "median_days_between_events": 71.5
+      },
+      "diagnostic_2026": {
+        "n": 29,
+        "months": 7,
+        "mean_pct": -9.136303370753314,
+        "ci95_pct": [
+          -13.000316732266104,
+          -4.873814603529895
+        ],
+        "p": 1.0,
+        "total_events": 39,
+        "unmatched": 10,
+        "outcome_unavailable": 0,
+        "unmatched_control": 10,
+        "effect_median_pct": -5.36593147184465,
+        "raw_mean_pct": -3.886894991307514,
+        "cost_hurdle_pct": {
+          "zero": -3.886894991307514,
+          "base": -4.186894991307514,
+          "double": -4.486894991307514
+        },
+        "effect_to_base_cost": -30.454344569177714,
+        "by_year": {
+          "2026": {
+            "count": 29,
+            "mean": -9.136303370753314
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 5,
+            "mean": -14.68592993285753
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": -0.17894904293493152
+          },
+          "DOGEUSDT": {
+            "count": 3,
+            "mean": -8.629166908131507
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": -1.0162657518528793
+          },
+          "PEPEUSDT": {
+            "count": 2,
+            "mean": -22.889346872931277
+          },
+          "SHIBUSDT": {
+            "count": 1,
+            "mean": 8.235520196779284
+          },
+          "SOLUSDT": {
+            "count": 6,
+            "mean": -22.7043407185437
+          },
+          "XRPUSDT": {
+            "count": 3,
+            "mean": 4.643565142728568
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -10.569480063204255,
+          "ETHUSDT": -10.827977874690903,
+          "BNBUSDT": -7.980131170314934,
+          "SOLUSDT": -5.596815366981907,
+          "XRPUSDT": -10.726288199231991,
+          "DOGEUSDT": -9.194819116440446,
+          "SHIBUSDT": -9.756725641022333,
+          "PEPEUSDT": -8.117559407629019
+        },
+        "without_best_pct": -10.157603681084774,
+        "top1_positive_contribution": 0.24350035466996786,
+        "mfe_median_pct": 2.6311655135688117,
+        "mae_median_pct": -5.730018938895942,
+        "mfe_q10_q90": [
+          0.34095143845627174,
+          19.327015781133866
+        ],
+        "mae_q10_q90": [
+          -15.972524638170553,
+          -1.1336130808612312
+        ],
+        "btc_regime": {
+          "neutral": {
+            "count": 14,
+            "mean": -14.449728114520994
+          },
+          "up": {
+            "count": 11,
+            "mean": -5.630982543346585
+          }
+        },
+        "median_days_between_events": 62.0
+      },
+      "common_period": {
+        "n": 53,
+        "months": 17,
+        "mean_pct": 3.955734390977731,
+        "ci95_pct": [
+          -4.281979097702427,
+          14.04358583946352
+        ],
+        "p": 0.21478521478521478,
+        "total_events": 80,
+        "unmatched": 27,
+        "outcome_unavailable": 0,
+        "unmatched_control": 27,
+        "effect_median_pct": 2.4323621163631515,
+        "raw_mean_pct": 7.215793078157292,
+        "cost_hurdle_pct": {
+          "zero": 7.215793078157292,
+          "base": 6.915793078157292,
+          "double": 6.615793078157292
+        },
+        "effect_to_base_cost": 13.185781303259104,
+        "by_year": {
+          "2024": {
+            "count": 20,
+            "mean": 2.049608150098074
+          },
+          "2025": {
+            "count": 33,
+            "mean": 5.110962415753282
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 7,
+            "mean": 0.6142139299153838
+          },
+          "BTCUSDT": {
+            "count": 9,
+            "mean": -1.9054863737381145
+          },
+          "DOGEUSDT": {
+            "count": 5,
+            "mean": 12.561422027204438
+          },
+          "ETHUSDT": {
+            "count": 7,
+            "mean": 1.80827004994059
+          },
+          "PEPEUSDT": {
+            "count": 6,
+            "mean": 35.291282581551215
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": -17.777309231902418
+          },
+          "SOLUSDT": {
+            "count": 9,
+            "mean": 1.9364922692690731
+          },
+          "XRPUSDT": {
+            "count": 6,
+            "mean": -1.8380144824450753
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 5.15462045648779,
+          "ETHUSDT": 4.282522442874688,
+          "BNBUSDT": 4.464226635052436,
+          "SOLUSDT": 4.368761188599958,
+          "XRPUSDT": 4.695361906733836,
+          "DOGEUSDT": 3.0593085955374497,
+          "SHIBUSDT": 5.729860401008764,
+          "PEPEUSDT": -0.0445483567550526
+        },
+        "without_best_pct": -0.3984979581140395,
+        "top1_positive_contribution": 0.45622409629878186,
+        "mfe_median_pct": 7.606406010693567,
+        "mae_median_pct": -5.612009237875282,
+        "mfe_q10_q90": [
+          0.9780085589487064,
+          23.845292309277443
+        ],
+        "mae_q10_q90": [
+          -13.0541917042471,
+          -0.452181574871706
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 9,
+            "mean": 1.3222722356935483
+          },
+          "neutral": {
+            "count": 13,
+            "mean": -4.05968880523725
+          },
+          "up": {
+            "count": 22,
+            "mean": 12.167218383286597
+          }
+        },
+        "median_days_between_events": 71.0
+      },
+      "validation_events_per_year_universe": 39.0,
+      "validation_events_per_year_per_symbol": 4.875,
+      "holm_p": 0.5314685314685315,
+      "class": "REJECT"
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "4h",
+      "discovery": {
+        "n": 31,
+        "months": 6,
+        "mean_pct": 3.6841580476499387,
+        "ci95_pct": [
+          1.1846031102203949,
+          8.905211771087247
+        ],
+        "p": 0.08491508491508491,
+        "total_events": 33,
+        "unmatched": 2,
+        "outcome_unavailable": 0,
+        "unmatched_control": 2,
+        "effect_median_pct": 2.1838168599720698,
+        "raw_mean_pct": 2.6797971476693103,
+        "cost_hurdle_pct": {
+          "zero": 2.6797971476693103,
+          "base": 2.3797971476693105,
+          "double": 2.0797971476693102
+        },
+        "effect_to_base_cost": 12.280526825499797,
+        "by_year": {
+          "2022": {
+            "count": 31,
+            "mean": 3.684158047649939
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 4,
+            "mean": 1.874111961096201
+          },
+          "BTCUSDT": {
+            "count": 4,
+            "mean": 4.951502225271989
+          },
+          "DOGEUSDT": {
+            "count": 4,
+            "mean": -1.0614062827634905
+          },
+          "ETHUSDT": {
+            "count": 7,
+            "mean": -2.473789000460909
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": 12.746625151113207
+          },
+          "SOLUSDT": {
+            "count": 4,
+            "mean": 13.99727802789443
+          },
+          "XRPUSDT": {
+            "count": 4,
+            "mean": 0.3732445374812796
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 3.496403354668894,
+          "ETHUSDT": 5.480225936682269,
+          "BNBUSDT": 3.952313023435678,
+          "SOLUSDT": 2.1562884209470514,
+          "XRPUSDT": 4.17466375286011,
+          "DOGEUSDT": 4.387204615118595,
+          "SHIBUSDT": 2.341570328618343,
+          "PEPEUSDT": 3.6841580476499387
+        },
+        "without_best_pct": 2.434309918511018,
+        "top1_positive_contribution": 0.24847248170655264,
+        "mfe_median_pct": 7.497565725413824,
+        "mae_median_pct": -7.844756399669706,
+        "mfe_q10_q90": [
+          3.7993123943826035,
+          22.275508516619812
+        ],
+        "mae_q10_q90": [
+          -19.28474183004805,
+          -1.050665421433572
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": 1.6786738188477777
+          },
+          "neutral": {
+            "count": 3,
+            "mean": 14.694826982005749
+          },
+          "up": {
+            "count": 4,
+            "mean": 4.186233313271835
+          }
+        },
+        "median_days_between_events": 19.666666666666664
+      },
+      "validation": {
+        "n": 133,
+        "months": 32,
+        "mean_pct": 1.4901541954148136,
+        "ci95_pct": [
+          0.10788283953003981,
+          2.953789449401308
+        ],
+        "p": 0.025974025974025976,
+        "total_events": 146,
+        "unmatched": 13,
+        "outcome_unavailable": 0,
+        "unmatched_control": 13,
+        "effect_median_pct": 1.3224396710422455,
+        "raw_mean_pct": 1.716961770559314,
+        "cost_hurdle_pct": {
+          "zero": 1.716961770559314,
+          "base": 1.416961770559314,
+          "double": 1.116961770559314
+        },
+        "effect_to_base_cost": 4.967180651382712,
+        "by_year": {
+          "2023": {
+            "count": 50,
+            "mean": 1.3776242123789526
+          },
+          "2024": {
+            "count": 39,
+            "mean": 2.4429261045935826
+          },
+          "2025": {
+            "count": 44,
+            "mean": 0.7735268020925647
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 19,
+            "mean": 0.028989624019519697
+          },
+          "BTCUSDT": {
+            "count": 21,
+            "mean": -0.4822926473049045
+          },
+          "DOGEUSDT": {
+            "count": 17,
+            "mean": 2.131204059899652
+          },
+          "ETHUSDT": {
+            "count": 18,
+            "mean": 1.5026826111540545
+          },
+          "PEPEUSDT": {
+            "count": 11,
+            "mean": -0.9019481339372377
+          },
+          "SHIBUSDT": {
+            "count": 18,
+            "mean": 5.242224142354574
+          },
+          "SOLUSDT": {
+            "count": 20,
+            "mean": 2.763045968614109
+          },
+          "XRPUSDT": {
+            "count": 9,
+            "mean": 0.532174471864484
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.8599879784247602,
+          "ETHUSDT": 1.4881932259947583,
+          "BNBUSDT": 1.7336816239806958,
+          "SOLUSDT": 1.2648636160875046,
+          "XRPUSDT": 1.5596849818015313,
+          "DOGEUSDT": 1.3962072325161736,
+          "SHIBUSDT": 0.9028736819807641,
+          "PEPEUSDT": 1.7058355529793428
+        },
+        "without_best_pct": 1.208018068500902,
+        "top1_positive_contribution": 0.11632881491545359,
+        "mfe_median_pct": 6.004343105320298,
+        "mae_median_pct": -6.880749649091067,
+        "mfe_q10_q90": [
+          2.0463989128002025,
+          22.02979768484927
+        ],
+        "mae_q10_q90": [
+          -15.523408670394758,
+          -1.257360790877762
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 27,
+            "mean": 4.451982413596641
+          },
+          "neutral": {
+            "count": 23,
+            "mean": 2.153065565286785
+          },
+          "up": {
+            "count": 62,
+            "mean": 0.6224938776591586
+          }
+        },
+        "median_days_between_events": 47.666666666666664
+      },
+      "diagnostic_2026": {
+        "n": 39,
+        "months": 7,
+        "mean_pct": -0.12345968749834235,
+        "ci95_pct": [
+          -1.8786332467024844,
+          2.968041184045275
+        ],
+        "p": 0.5774225774225774,
+        "total_events": 39,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -0.3553126211344857,
+        "raw_mean_pct": -1.9282890809935462,
+        "cost_hurdle_pct": {
+          "zero": -1.9282890809935462,
+          "base": -2.2282890809935463,
+          "double": -2.528289080993546
+        },
+        "effect_to_base_cost": -0.4115322916611412,
+        "by_year": {
+          "2026": {
+            "count": 39,
+            "mean": -0.1234596874983424
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 5,
+            "mean": 1.2365643577794376
+          },
+          "BTCUSDT": {
+            "count": 7,
+            "mean": 1.458834617773315
+          },
+          "DOGEUSDT": {
+            "count": 4,
+            "mean": -3.7339657614899258
+          },
+          "ETHUSDT": {
+            "count": 6,
+            "mean": 1.5466940981268953
+          },
+          "PEPEUSDT": {
+            "count": 5,
+            "mean": 1.2528263761113212
+          },
+          "SHIBUSDT": {
+            "count": 3,
+            "mean": -0.7909587122144455
+          },
+          "SOLUSDT": {
+            "count": 5,
+            "mean": -0.5319358723966275
+          },
+          "XRPUSDT": {
+            "count": 4,
+            "mean": -4.196367462619387
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.4695865667765174,
+          "ETHUSDT": -0.4271240121574765,
+          "BNBUSDT": -0.32346322356860424,
+          "SOLUSDT": -0.06338966030741808,
+          "XRPUSDT": 0.3420154868012055,
+          "DOGEUSDT": 0.2891695781006958,
+          "SHIBUSDT": -0.06783476877200048,
+          "PEPEUSDT": -0.3258546968527047
+        },
+        "without_best_pct": -0.33585842711917174,
+        "top1_positive_contribution": 0.1032298104380222,
+        "mfe_median_pct": 6.08400125650892,
+        "mae_median_pct": -6.151377373629319,
+        "mfe_q10_q90": [
+          1.350062664199565,
+          11.653163045309105
+        ],
+        "mae_q10_q90": [
+          -15.45598903023989,
+          -1.6611787831899645
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": -2.0039502275426995
+          },
+          "neutral": {
+            "count": 2,
+            "mean": 5.1374881655408275
+          },
+          "up": {
+            "count": 10,
+            "mean": 1.4777258082923772
+          }
+        },
+        "median_days_between_events": 39.833333333333336
+      },
+      "common_period": {
+        "n": 89,
+        "months": 21,
+        "mean_pct": 1.3245918391677884,
+        "ci95_pct": [
+          -0.32490136041228795,
+          3.291993671499084
+        ],
+        "p": 0.0969030969030969,
+        "total_events": 98,
+        "unmatched": 9,
+        "outcome_unavailable": 0,
+        "unmatched_control": 9,
+        "effect_median_pct": 1.2866671013827622,
+        "raw_mean_pct": 2.5799161971443345,
+        "cost_hurdle_pct": {
+          "zero": 2.5799161971443345,
+          "base": 2.2799161971443347,
+          "double": 1.9799161971443344
+        },
+        "effect_to_base_cost": 4.415306130559295,
+        "by_year": {
+          "2023": {
+            "count": 6,
+            "mean": -1.90343728088156
+          },
+          "2024": {
+            "count": 39,
+            "mean": 2.4429261045935826
+          },
+          "2025": {
+            "count": 44,
+            "mean": 0.7735268020925647
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 12,
+            "mean": -0.6130405586719273
+          },
+          "BTCUSDT": {
+            "count": 14,
+            "mean": 0.005500958162005893
+          },
+          "DOGEUSDT": {
+            "count": 12,
+            "mean": 0.43131045100712756
+          },
+          "ETHUSDT": {
+            "count": 13,
+            "mean": 1.825813567384947
+          },
+          "PEPEUSDT": {
+            "count": 11,
+            "mean": -0.9019481339372377
+          },
+          "SHIBUSDT": {
+            "count": 9,
+            "mean": 5.637995466124202
+          },
+          "SOLUSDT": {
+            "count": 12,
+            "mean": 4.428384441202403
+          },
+          "XRPUSDT": {
+            "count": 6,
+            "mean": 0.38261702856689267
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 1.570822136955535,
+          "ETHUSDT": 1.2388565435516956,
+          "BNBUSDT": 1.626560524545407,
+          "SOLUSDT": 0.8408839011883676,
+          "XRPUSDT": 1.3926864037895401,
+          "DOGEUSDT": 1.463804523036983,
+          "SHIBUSDT": 0.8393339311351917,
+          "PEPEUSDT": 1.638591066144138
+        },
+        "without_best_pct": 0.8995062583850235,
+        "top1_positive_contribution": 0.09402634082590056,
+        "mfe_median_pct": 7.126656320878599,
+        "mae_median_pct": -7.5798393126283115,
+        "mfe_q10_q90": [
+          2.035131966577035,
+          25.494457626669067
+        ],
+        "mae_q10_q90": [
+          -16.589135385413417,
+          -1.7775416402079194
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 16,
+            "mean": 4.24381954597038
+          },
+          "neutral": {
+            "count": 15,
+            "mean": 2.871847504790073
+          },
+          "up": {
+            "count": 44,
+            "mean": 0.15529170373381693
+          }
+        },
+        "median_days_between_events": 53.833333333333336
+      },
+      "validation_events_per_year_universe": 48.666666666666664,
+      "validation_events_per_year_per_symbol": 6.083333333333333,
+      "holm_p": 0.2077922077922078,
+      "class": "WEAK"
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "discovery": {
+        "n": 22,
+        "months": 5,
+        "mean_pct": 0.5844787831492934,
+        "ci95_pct": [
+          -3.7346800748702935,
+          4.809592109558963
+        ],
+        "p": 0.41058941058941056,
+        "total_events": 22,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 2.204196572261762,
+        "raw_mean_pct": -0.7058846878012072,
+        "cost_hurdle_pct": {
+          "zero": -0.7058846878012072,
+          "base": -1.005884687801207,
+          "double": -1.3058846878012071
+        },
+        "effect_to_base_cost": 1.9482626104976446,
+        "by_year": {
+          "2022": {
+            "count": 22,
+            "mean": 0.5844787831492934
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 4,
+            "mean": 3.7263011232808934
+          },
+          "BTCUSDT": {
+            "count": 3,
+            "mean": 5.884811180508982
+          },
+          "DOGEUSDT": {
+            "count": 3,
+            "mean": -0.2939324806080806
+          },
+          "ETHUSDT": {
+            "count": 5,
+            "mean": 0.17290342096976197
+          },
+          "SHIBUSDT": {
+            "count": 2,
+            "mean": -0.01641291500630615
+          },
+          "SOLUSDT": {
+            "count": 3,
+            "mean": -4.669666930861395
+          },
+          "XRPUSDT": {
+            "count": 2,
+            "mean": -2.8209989228969157
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.25241580590749935,
+          "ETHUSDT": 0.7055303602609202,
+          "BNBUSDT": -0.1137039591021731,
+          "SOLUSDT": 1.4140807379930864,
+          "XRPUSDT": 0.9250265537539143,
+          "DOGEUSDT": 0.7231752984794053,
+          "SHIBUSDT": 0.6445679529648534,
+          "PEPEUSDT": 0.5844787831492934
+        },
+        "without_best_pct": -0.1660760529651362,
+        "top1_positive_contribution": 0.21867814190452253,
+        "mfe_median_pct": 7.677548913447902,
+        "mae_median_pct": -8.601865100193418,
+        "mfe_q10_q90": [
+          4.428809176232143,
+          18.16054218981252
+        ],
+        "mae_q10_q90": [
+          -25.259335377533315,
+          -1.6379165455333742
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 14,
+            "mean": -0.902505835683024
+          },
+          "neutral": {
+            "count": 1,
+            "mean": 3.341246863348979
+          },
+          "up": {
+            "count": 4,
+            "mean": 1.1244836309927169
+          }
+        },
+        "median_days_between_events": 20.0
+      },
+      "validation": {
+        "n": 96,
+        "months": 30,
+        "mean_pct": 0.6776950888807637,
+        "ci95_pct": [
+          -1.3495016933698138,
+          2.7570187315244796
+        ],
+        "p": 0.2807192807192807,
+        "total_events": 110,
+        "unmatched": 14,
+        "outcome_unavailable": 0,
+        "unmatched_control": 14,
+        "effect_median_pct": 0.7021626968195338,
+        "raw_mean_pct": 1.9352055519987321,
+        "cost_hurdle_pct": {
+          "zero": 1.9352055519987321,
+          "base": 1.635205551998732,
+          "double": 1.3352055519987323
+        },
+        "effect_to_base_cost": 2.258983629602546,
+        "by_year": {
+          "2023": {
+            "count": 36,
+            "mean": 1.160081153895398
+          },
+          "2024": {
+            "count": 35,
+            "mean": 0.33472818732285387
+          },
+          "2025": {
+            "count": 25,
+            "mean": 0.4632128174407641
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 13,
+            "mean": 2.2131746258168628
+          },
+          "BTCUSDT": {
+            "count": 14,
+            "mean": -0.011766702573157817
+          },
+          "DOGEUSDT": {
+            "count": 12,
+            "mean": -4.682598252600752
+          },
+          "ETHUSDT": {
+            "count": 11,
+            "mean": 2.4267166261967996
+          },
+          "PEPEUSDT": {
+            "count": 10,
+            "mean": -2.6421186463341555
+          },
+          "SHIBUSDT": {
+            "count": 12,
+            "mean": 5.169535252960276
+          },
+          "SOLUSDT": {
+            "count": 16,
+            "mean": 0.7984188455508628
+          },
+          "XRPUSDT": {
+            "count": 8,
+            "mean": 2.1951937843758746
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.7954080776655796,
+          "ETHUSDT": 0.4513511252281001,
+          "BNBUSDT": 0.43719829393896503,
+          "SOLUSDT": 0.6535503375467441,
+          "XRPUSDT": 0.539740662017572,
+          "DOGEUSDT": 1.4434512805209803,
+          "SHIBUSDT": 0.03600363686940498,
+          "PEPEUSDT": 1.063719941812731
+        },
+        "without_best_pct": 0.40386203493045786,
+        "top1_positive_contribution": 0.06415797335950961,
+        "mfe_median_pct": 6.845953304961972,
+        "mae_median_pct": -6.554600042215425,
+        "mfe_q10_q90": [
+          1.1756705884939878,
+          22.75844587508781
+        ],
+        "mae_q10_q90": [
+          -17.523897907789365,
+          -1.1802948805485658
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 16,
+            "mean": 4.305211513249357
+          },
+          "neutral": {
+            "count": 22,
+            "mean": 3.653385893812945
+          },
+          "up": {
+            "count": 44,
+            "mean": -1.9098729888022037
+          }
+        },
+        "median_days_between_events": 60.5
+      },
+      "diagnostic_2026": {
+        "n": 31,
+        "months": 8,
+        "mean_pct": 0.1657855254975117,
+        "ci95_pct": [
+          -2.2908383940601094,
+          4.124053717364232
+        ],
+        "p": 0.4145854145854146,
+        "total_events": 35,
+        "unmatched": 4,
+        "outcome_unavailable": 0,
+        "unmatched_control": 4,
+        "effect_median_pct": -0.6562979285863388,
+        "raw_mean_pct": -0.6773139313958624,
+        "cost_hurdle_pct": {
+          "zero": -0.6773139313958624,
+          "base": -0.9773139313958623,
+          "double": -1.2773139313958624
+        },
+        "effect_to_base_cost": 0.552618418325039,
+        "by_year": {
+          "2026": {
+            "count": 31,
+            "mean": 0.16578552549751174
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 4,
+            "mean": 2.3177099000049397
+          },
+          "BTCUSDT": {
+            "count": 7,
+            "mean": 1.3202530163443755
+          },
+          "DOGEUSDT": {
+            "count": 3,
+            "mean": 1.0664206491599506
+          },
+          "ETHUSDT": {
+            "count": 4,
+            "mean": -2.7131629957573056
+          },
+          "PEPEUSDT": {
+            "count": 3,
+            "mean": -1.0441279024773011
+          },
+          "SHIBUSDT": {
+            "count": 3,
+            "mean": -3.1531895262756127
+          },
+          "SOLUSDT": {
+            "count": 5,
+            "mean": 1.1788429029151621
+          },
+          "XRPUSDT": {
+            "count": 2,
+            "mean": 0.4889341916123886
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.1709341593328236,
+          "ETHUSDT": 0.5922964175352624,
+          "BNBUSDT": -0.1530180855406258,
+          "SOLUSDT": -0.029033200928959575,
+          "XRPUSDT": 0.14349941059303742,
+          "DOGEUSDT": 0.06928890510510755,
+          "SHIBUSDT": 0.5213899953303465,
+          "PEPEUSDT": 0.2954191070662416
+        },
+        "without_best_pct": -0.4864664931833194,
+        "top1_positive_contribution": 0.264771377749283,
+        "mfe_median_pct": 5.928980087576308,
+        "mae_median_pct": -6.459551890561577,
+        "mfe_q10_q90": [
+          1.374874392899006,
+          12.413401476433839
+        ],
+        "mae_q10_q90": [
+          -17.14285714285715,
+          -0.8154417836498729
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 16,
+            "mean": -1.0576150594664822
+          },
+          "neutral": {
+            "count": 4,
+            "mean": -3.69874057679844
+          },
+          "up": {
+            "count": 4,
+            "mean": 6.903595858667427
+          }
+        },
+        "median_days_between_events": 29.0
+      },
+      "common_period": {
+        "n": 63,
+        "months": 20,
+        "mean_pct": 0.37921724995950146,
+        "ci95_pct": [
+          -2.040278983115068,
+          3.096767771500929
+        ],
+        "p": 0.4385614385614386,
+        "total_events": 74,
+        "unmatched": 11,
+        "outcome_unavailable": 0,
+        "unmatched_control": 11,
+        "effect_median_pct": 0.7793294394031047,
+        "raw_mean_pct": 3.5269750070540495,
+        "cost_hurdle_pct": {
+          "zero": 3.5269750070540495,
+          "base": 3.2269750070540497,
+          "double": 2.9269750070540494
+        },
+        "effect_to_base_cost": 1.264057499865005,
+        "by_year": {
+          "2023": {
+            "count": 3,
+            "mean": 0.1982932517098656
+          },
+          "2024": {
+            "count": 35,
+            "mean": 0.33472818732285387
+          },
+          "2025": {
+            "count": 25,
+            "mean": 0.4632128174407641
+          }
+        },
+        "by_symbol": {
+          "BNBUSDT": {
+            "count": 8,
+            "mean": 3.033245216425006
+          },
+          "BTCUSDT": {
+            "count": 10,
+            "mean": 1.1643969410517359
+          },
+          "DOGEUSDT": {
+            "count": 8,
+            "mean": -8.689344120446817
+          },
+          "ETHUSDT": {
+            "count": 8,
+            "mean": 3.456909215756581
+          },
+          "PEPEUSDT": {
+            "count": 10,
+            "mean": -2.6421186463341555
+          },
+          "SHIBUSDT": {
+            "count": 4,
+            "mean": 8.371910901480216
+          },
+          "SOLUSDT": {
+            "count": 11,
+            "mean": -0.10395967700707211
+          },
+          "XRPUSDT": {
+            "count": 4,
+            "mean": 5.97933353688789
+          }
+        },
+        "h5_participation": null,
+        "h5_group_forward_pct": null,
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.23107013843266463,
+          "ETHUSDT": -0.06844703597461896,
+          "BNBUSDT": -0.006823181526390101,
+          "SOLUSDT": 0.481427753740892,
+          "XRPUSDT": -0.0004516508492028881,
+          "DOGEUSDT": 1.6982807220186027,
+          "SHIBUSDT": -0.16266028573681804,
+          "PEPEUSDT": 0.9492806266186822
+        },
+        "without_best_pct": -0.045179813979213376,
+        "top1_positive_contribution": 0.0887913635982916,
+        "mfe_median_pct": 7.998287375422275,
+        "mae_median_pct": -5.920161178817629,
+        "mfe_q10_q90": [
+          1.2110764766321758,
+          25.69195519409485
+        ],
+        "mae_q10_q90": [
+          -21.10584449798097,
+          -2.1589894058855807
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 11,
+            "mean": 4.405579894088088
+          },
+          "neutral": {
+            "count": 13,
+            "mean": 2.0914454401076488
+          },
+          "up": {
+            "count": 29,
+            "mean": -2.186325938601281
+          }
+        },
+        "median_days_between_events": 62.0
+      },
+      "validation_events_per_year_universe": 36.666666666666664,
+      "validation_events_per_year_per_symbol": 4.583333333333333,
+      "holm_p": 1.0,
+      "class": "REJECT"
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "4h",
+      "discovery": {
+        "n": 54,
+        "months": 30,
+        "mean_pct": 0.6510225736345534,
+        "ci95_pct": [
+          -0.4214619927835479,
+          1.8181788892908304
+        ],
+        "p": 0.15284715284715283,
+        "total_events": 58,
+        "unmatched": 4,
+        "outcome_unavailable": 4,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.272140604087803,
+        "raw_mean_pct": 0.6510225736345534,
+        "cost_hurdle_pct": {
+          "zero": 0.6510225736345534,
+          "base": 0.3510225736345534,
+          "double": 0.051022573634553425
+        },
+        "effect_to_base_cost": 2.1700752454485115,
+        "by_year": {
+          "2020": {
+            "count": 15,
+            "mean": 2.7626852514542484
+          },
+          "2021": {
+            "count": 14,
+            "mean": 0.8916542424597665
+          },
+          "2022": {
+            "count": 25,
+            "mean": -0.7507287675993826
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 54,
+            "mean": 0.6510225736345534
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 17,
+            "bottom": 14
+          },
+          "ETHUSDT": {
+            "top": 20,
+            "bottom": 11
+          },
+          "BNBUSDT": {
+            "top": 20,
+            "bottom": 14
+          },
+          "SOLUSDT": {
+            "top": 12,
+            "bottom": 16
+          },
+          "XRPUSDT": {
+            "top": 15,
+            "bottom": 20
+          },
+          "DOGEUSDT": {
+            "top": 14,
+            "bottom": 22
+          },
+          "SHIBUSDT": {
+            "top": 10,
+            "bottom": 11
+          },
+          "PEPEUSDT": {
+            "top": 0,
+            "bottom": 0
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 3.147088757314344,
+          "middle_mean_pct": 3.66567926505052,
+          "bottom_mean_pct": 1.8450436100452363
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.35499747764557915,
+          "ETHUSDT": 2.2829770935755462,
+          "BNBUSDT": 0.1122055802433474,
+          "SOLUSDT": 1.3823586944045199,
+          "XRPUSDT": -0.14511771085972366,
+          "DOGEUSDT": 0.9927730457320586,
+          "SHIBUSDT": 0.704381218561206,
+          "PEPEUSDT": 0.6241095095282937
+        },
+        "without_best_pct": 0.12009135371258803,
+        "top1_positive_contribution": 0.25155940277955235,
+        "mfe_median_pct": 9.718695105307152,
+        "mae_median_pct": -9.05056623595069,
+        "mfe_q10_q90": [
+          4.985631878180617,
+          19.003095362126366
+        ],
+        "mae_q10_q90": [
+          -20.812390237069287,
+          -4.735711051779696
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": -0.5397404567180963
+          },
+          "neutral": {
+            "count": 18,
+            "mean": 1.5568392570364864
+          },
+          "up": {
+            "count": 16,
+            "mean": 1.1204325927481913
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "validation": {
+        "n": 78,
+        "months": 36,
+        "mean_pct": 0.37805511632218386,
+        "ci95_pct": [
+          -0.4675431198005459,
+          1.1607188788634544
+        ],
+        "p": 0.19880119880119881,
+        "total_events": 78,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -0.05187382364136006,
+        "raw_mean_pct": 0.37805511632218386,
+        "cost_hurdle_pct": {
+          "zero": 0.37805511632218386,
+          "base": 0.07805511632218387,
+          "double": -0.22194488367781612
+        },
+        "effect_to_base_cost": 1.2601837210739462,
+        "by_year": {
+          "2023": {
+            "count": 26,
+            "mean": -0.3611147138685109
+          },
+          "2024": {
+            "count": 26,
+            "mean": 0.08739468014784671
+          },
+          "2025": {
+            "count": 26,
+            "mean": 1.407885382687216
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 78,
+            "mean": 0.3780551163221839
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 36,
+            "bottom": 9
+          },
+          "ETHUSDT": {
+            "top": 23,
+            "bottom": 14
+          },
+          "BNBUSDT": {
+            "top": 24,
+            "bottom": 19
+          },
+          "SOLUSDT": {
+            "top": 21,
+            "bottom": 14
+          },
+          "XRPUSDT": {
+            "top": 23,
+            "bottom": 23
+          },
+          "DOGEUSDT": {
+            "top": 8,
+            "bottom": 22
+          },
+          "SHIBUSDT": {
+            "top": 9,
+            "bottom": 32
+          },
+          "PEPEUSDT": {
+            "top": 12,
+            "bottom": 23
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 2.6554208884066863,
+          "middle_mean_pct": 1.4156054428847762,
+          "bottom_mean_pct": 1.8993106557623185
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.5554804486021782,
+          "ETHUSDT": 0.1631697365299221,
+          "BNBUSDT": 0.3379741735649988,
+          "SOLUSDT": 0.5546292600632713,
+          "XRPUSDT": -0.29843426984750604,
+          "DOGEUSDT": 0.3892601333390424,
+          "SHIBUSDT": 0.2717649139067473,
+          "PEPEUSDT": 0.47228852287658457
+        },
+        "without_best_pct": 0.22957776112935716,
+        "top1_positive_contribution": 0.09745437474274328,
+        "mfe_median_pct": 7.650894123332291,
+        "mae_median_pct": -7.544314752565249,
+        "mfe_q10_q90": [
+          3.867902520966912,
+          14.24757771103132
+        ],
+        "mae_q10_q90": [
+          -13.479384800677076,
+          -3.6248296486203886
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 15,
+            "mean": -0.25845607455686687
+          },
+          "neutral": {
+            "count": 30,
+            "mean": 0.39609025712306756
+          },
+          "up": {
+            "count": 33,
+            "mean": 0.6509828023573128
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "diagnostic_2026": {
+        "n": 21,
+        "months": 10,
+        "mean_pct": -1.1041942504015259,
+        "ci95_pct": [
+          -2.9457268362491535,
+          0.32884610167038414
+        ],
+        "p": 0.8981018981018981,
+        "total_events": 21,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -0.6607621485410331,
+        "raw_mean_pct": -1.1041942504015259,
+        "cost_hurdle_pct": {
+          "zero": -1.1041942504015259,
+          "base": -1.404194250401526,
+          "double": -1.704194250401526
+        },
+        "effect_to_base_cost": -3.6806475013384197,
+        "by_year": {
+          "2026": {
+            "count": 21,
+            "mean": -1.104194250401526
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 21,
+            "mean": -1.104194250401526
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 6,
+            "bottom": 2
+          },
+          "ETHUSDT": {
+            "top": 8,
+            "bottom": 7
+          },
+          "BNBUSDT": {
+            "top": 9,
+            "bottom": 5
+          },
+          "SOLUSDT": {
+            "top": 6,
+            "bottom": 3
+          },
+          "XRPUSDT": {
+            "top": 4,
+            "bottom": 3
+          },
+          "DOGEUSDT": {
+            "top": 1,
+            "bottom": 6
+          },
+          "SHIBUSDT": {
+            "top": 4,
+            "bottom": 9
+          },
+          "PEPEUSDT": {
+            "top": 4,
+            "bottom": 7
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 0.6799649722489144,
+          "middle_mean_pct": 1.1227102864882634,
+          "bottom_mean_pct": 2.8883534730519664
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.9888641869654677,
+          "ETHUSDT": -1.082139067223456,
+          "BNBUSDT": -1.0919438939752981,
+          "SOLUSDT": -1.190028628027519,
+          "XRPUSDT": -0.8648100053378249,
+          "DOGEUSDT": -1.2869140626568218,
+          "SHIBUSDT": -1.0962612344783405,
+          "PEPEUSDT": -0.8264285484009558
+        },
+        "without_best_pct": -1.3521316294880585,
+        "top1_positive_contribution": 0.2562439888206438,
+        "mfe_median_pct": 5.227606475801092,
+        "mae_median_pct": -5.556739072945716,
+        "mfe_q10_q90": [
+          3.714735332501695,
+          11.41502436365084
+        ],
+        "mae_q10_q90": [
+          -15.179643350436383,
+          -3.691120919299176
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 5,
+            "mean": -0.335049371199973
+          },
+          "neutral": {
+            "count": 10,
+            "mean": -2.455312306393353
+          },
+          "up": {
+            "count": 6,
+            "mean": 0.5067151102502246
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "common_period": {
+        "n": 54,
+        "months": 25,
+        "mean_pct": 0.7217575872374467,
+        "ci95_pct": [
+          -0.11250943225185414,
+          1.5153467470362134
+        ],
+        "p": 0.04195804195804196,
+        "total_events": 54,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 0.5100779643037624,
+        "raw_mean_pct": 0.7217575872374467,
+        "cost_hurdle_pct": {
+          "zero": 0.7217575872374467,
+          "base": 0.42175758723744666,
+          "double": 0.12175758723744667
+        },
+        "effect_to_base_cost": 2.4058586241248223,
+        "by_year": {
+          "2023": {
+            "count": 2,
+            "mean": 0.04881403855523936
+          },
+          "2024": {
+            "count": 26,
+            "mean": 0.08739468014784671
+          },
+          "2025": {
+            "count": 26,
+            "mean": 1.407885382687216
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 54,
+            "mean": 0.7217575872374465
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 22,
+            "bottom": 6
+          },
+          "ETHUSDT": {
+            "top": 15,
+            "bottom": 12
+          },
+          "BNBUSDT": {
+            "top": 22,
+            "bottom": 11
+          },
+          "SOLUSDT": {
+            "top": 11,
+            "bottom": 12
+          },
+          "XRPUSDT": {
+            "top": 17,
+            "bottom": 17
+          },
+          "DOGEUSDT": {
+            "top": 5,
+            "bottom": 12
+          },
+          "SHIBUSDT": {
+            "top": 5,
+            "bottom": 20
+          },
+          "PEPEUSDT": {
+            "top": 11,
+            "bottom": 18
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 2.859493479315784,
+          "middle_mean_pct": 1.8826790113073142,
+          "bottom_mean_pct": 1.4159783048408912
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.9080998760079549,
+          "ETHUSDT": 0.4223917637394696,
+          "BNBUSDT": 0.7941965913178856,
+          "SOLUSDT": 0.8578585948624635,
+          "XRPUSDT": -0.5101269711950732,
+          "DOGEUSDT": 0.57260137585032,
+          "SHIBUSDT": 0.5659421419028442,
+          "PEPEUSDT": 0.6193019381134226
+        },
+        "without_best_pct": 0.5125301555594769,
+        "top1_positive_contribution": 0.13288783176590924,
+        "mfe_median_pct": 8.136480373619927,
+        "mae_median_pct": -7.731171740148822,
+        "mfe_q10_q90": [
+          3.988669247633548,
+          14.058960079493026
+        ],
+        "mae_q10_q90": [
+          -14.015038563007046,
+          -3.6536721333993087
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 11,
+            "mean": -0.4127131203498593
+          },
+          "neutral": {
+            "count": 23,
+            "mean": 0.18634344297599756
+          },
+          "up": {
+            "count": 20,
+            "mean": 1.961442742311131
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "validation_events_per_year_universe": 26.0,
+      "validation_events_per_year_per_symbol": null,
+      "holm_p": 1.0,
+      "class": "WEAK"
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "discovery": {
+        "n": 53,
+        "months": 29,
+        "mean_pct": 0.7193110648065856,
+        "ci95_pct": [
+          -0.19041485326619942,
+          1.7847293704666505
+        ],
+        "p": 0.1018981018981019,
+        "total_events": 57,
+        "unmatched": 4,
+        "outcome_unavailable": 4,
+        "unmatched_control": 0,
+        "effect_median_pct": 1.2427056650237471,
+        "raw_mean_pct": 0.7193110648065856,
+        "cost_hurdle_pct": {
+          "zero": 0.7193110648065856,
+          "base": 0.4193110648065856,
+          "double": 0.1193110648065856
+        },
+        "effect_to_base_cost": 2.397703549355285,
+        "by_year": {
+          "2020": {
+            "count": 14,
+            "mean": 3.4168540920102006
+          },
+          "2021": {
+            "count": 14,
+            "mean": 0.5455412714334692
+          },
+          "2022": {
+            "count": 25,
+            "mean": -0.6940019461384931
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 53,
+            "mean": 0.7193110648065858
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 16,
+            "bottom": 12
+          },
+          "ETHUSDT": {
+            "top": 20,
+            "bottom": 12
+          },
+          "BNBUSDT": {
+            "top": 22,
+            "bottom": 12
+          },
+          "SOLUSDT": {
+            "top": 13,
+            "bottom": 18
+          },
+          "XRPUSDT": {
+            "top": 16,
+            "bottom": 21
+          },
+          "DOGEUSDT": {
+            "top": 9,
+            "bottom": 22
+          },
+          "SHIBUSDT": {
+            "top": 10,
+            "bottom": 9
+          },
+          "PEPEUSDT": {
+            "top": 0,
+            "bottom": 0
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 2.685632714455036,
+          "middle_mean_pct": 4.0619263706144535,
+          "bottom_mean_pct": 1.2470105848418638
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": -1.0756226979982715,
+          "ETHUSDT": 0.7412179998399829,
+          "BNBUSDT": 0.1285556644632056,
+          "SOLUSDT": -0.03440372303915155,
+          "XRPUSDT": -1.4424147764489126,
+          "DOGEUSDT": 0.7298874222381863,
+          "SHIBUSDT": 0.5064006098888775,
+          "PEPEUSDT": 0.5223880885653998
+        },
+        "without_best_pct": 0.1794828693317368,
+        "top1_positive_contribution": 0.2682549003253139,
+        "mfe_median_pct": 9.835615403301283,
+        "mae_median_pct": -8.637628284304549,
+        "mfe_q10_q90": [
+          5.281575377852193,
+          19.060574983442816
+        ],
+        "mae_q10_q90": [
+          -20.01089957830942,
+          -4.724039300329414
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 20,
+            "mean": -0.5536224988009928
+          },
+          "neutral": {
+            "count": 18,
+            "mean": 1.5995239476018959
+          },
+          "up": {
+            "count": 15,
+            "mean": 1.3603003569289849
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "validation": {
+        "n": 78,
+        "months": 36,
+        "mean_pct": -0.14811187844731322,
+        "ci95_pct": [
+          -1.4659725662478134,
+          0.9133053643289176
+        ],
+        "p": 0.6093906093906094,
+        "total_events": 78,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 0.11118333284813042,
+        "raw_mean_pct": -0.14811187844731322,
+        "cost_hurdle_pct": {
+          "zero": -0.14811187844731322,
+          "base": -0.4481118784473132,
+          "double": -0.7481118784473132
+        },
+        "effect_to_base_cost": -0.4937062614910441,
+        "by_year": {
+          "2023": {
+            "count": 26,
+            "mean": -0.2726994953468201
+          },
+          "2024": {
+            "count": 26,
+            "mean": -1.4660804896237787
+          },
+          "2025": {
+            "count": 26,
+            "mean": 1.294444349628659
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 78,
+            "mean": -0.1481118784473132
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 34,
+            "bottom": 9
+          },
+          "ETHUSDT": {
+            "top": 22,
+            "bottom": 16
+          },
+          "BNBUSDT": {
+            "top": 26,
+            "bottom": 17
+          },
+          "SOLUSDT": {
+            "top": 23,
+            "bottom": 14
+          },
+          "XRPUSDT": {
+            "top": 20,
+            "bottom": 24
+          },
+          "DOGEUSDT": {
+            "top": 8,
+            "bottom": 21
+          },
+          "SHIBUSDT": {
+            "top": 9,
+            "bottom": 31
+          },
+          "PEPEUSDT": {
+            "top": 14,
+            "bottom": 24
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 2.530071628432321,
+          "middle_mean_pct": 1.0131059966743239,
+          "bottom_mean_pct": 2.8262953853269472
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.05437250820804078,
+          "ETHUSDT": -0.342784810009817,
+          "BNBUSDT": -0.12245812608719402,
+          "SOLUSDT": 0.12152647202979494,
+          "XRPUSDT": -0.3184716373273075,
+          "DOGEUSDT": 0.06959984534790098,
+          "SHIBUSDT": -0.1947510045394752,
+          "PEPEUSDT": 0.5165732444184249
+        },
+        "without_best_pct": -0.30342257123454897,
+        "top1_positive_contribution": 0.1033355558524124,
+        "mfe_median_pct": 7.638417379149261,
+        "mae_median_pct": -7.797429528945042,
+        "mfe_q10_q90": [
+          4.110327995624252,
+          14.097381382735314
+        ],
+        "mae_q10_q90": [
+          -14.543673214402364,
+          -3.6740367096395237
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 16,
+            "mean": 0.057172491738905845
+          },
+          "neutral": {
+            "count": 30,
+            "mean": -0.12405398432476752
+          },
+          "up": {
+            "count": 32,
+            "mean": -0.27330833928030934
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "diagnostic_2026": {
+        "n": 21,
+        "months": 10,
+        "mean_pct": -1.0342585289500446,
+        "ci95_pct": [
+          -2.9344645701707455,
+          0.3756753211531376
+        ],
+        "p": 0.8801198801198801,
+        "total_events": 21,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": -0.6607621485410331,
+        "raw_mean_pct": -1.0342585289500446,
+        "cost_hurdle_pct": {
+          "zero": -1.0342585289500446,
+          "base": -1.3342585289500446,
+          "double": -1.6342585289500446
+        },
+        "effect_to_base_cost": -3.447528429833482,
+        "by_year": {
+          "2026": {
+            "count": 21,
+            "mean": -1.0342585289500448
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 21,
+            "mean": -1.0342585289500448
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 4,
+            "bottom": 1
+          },
+          "ETHUSDT": {
+            "top": 7,
+            "bottom": 5
+          },
+          "BNBUSDT": {
+            "top": 10,
+            "bottom": 5
+          },
+          "SOLUSDT": {
+            "top": 6,
+            "bottom": 3
+          },
+          "XRPUSDT": {
+            "top": 3,
+            "bottom": 4
+          },
+          "DOGEUSDT": {
+            "top": 3,
+            "bottom": 9
+          },
+          "SHIBUSDT": {
+            "top": 4,
+            "bottom": 8
+          },
+          "PEPEUSDT": {
+            "top": 5,
+            "bottom": 7
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 0.5616562706845323,
+          "middle_mean_pct": 1.3109547095041263,
+          "bottom_mean_pct": 2.630173328584622
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": -0.9178672522061362,
+          "ETHUSDT": -0.8234241441190526,
+          "BNBUSDT": -0.9782544116364533,
+          "SOLUSDT": -1.1787633752239157,
+          "XRPUSDT": -0.6146625832696965,
+          "DOGEUSDT": -1.281878947271718,
+          "SHIBUSDT": -0.9333352081798035,
+          "PEPEUSDT": -0.765255831971732
+        },
+        "without_best_pct": -1.3640955097792855,
+        "top1_positive_contribution": 0.3531013505645144,
+        "mfe_median_pct": 5.494909507400389,
+        "mae_median_pct": -5.556739072945716,
+        "mfe_q10_q90": [
+          3.714735332501695,
+          11.41502436365084
+        ],
+        "mae_q10_q90": [
+          -15.179643350436383,
+          -3.646701208433756
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 5,
+            "mean": -0.2835348636347076
+          },
+          "neutral": {
+            "count": 8,
+            "mean": -2.3098049382800783
+          },
+          "up": {
+            "count": 8,
+            "mean": -0.22791441044209698
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "common_period": {
+        "n": 54,
+        "months": 25,
+        "mean_pct": -0.08083169560671534,
+        "ci95_pct": [
+          -1.6646252300805815,
+          1.0876220848132474
+        ],
+        "p": 0.5584415584415584,
+        "total_events": 54,
+        "unmatched": 0,
+        "outcome_unavailable": 0,
+        "unmatched_control": 0,
+        "effect_median_pct": 0.30572794917547025,
+        "raw_mean_pct": -0.08083169560671534,
+        "cost_hurdle_pct": {
+          "zero": -0.08083169560671534,
+          "base": -0.3808316956067153,
+          "double": -0.6808316956067153
+        },
+        "effect_to_base_cost": -0.2694389853557178,
+        "by_year": {
+          "2023": {
+            "count": 2,
+            "mean": 0.04881403855523936
+          },
+          "2024": {
+            "count": 26,
+            "mean": -1.4660804896237787
+          },
+          "2025": {
+            "count": 26,
+            "mean": 1.294444349628659
+          }
+        },
+        "by_symbol": {
+          "CROSS_SECTION": {
+            "count": 54,
+            "mean": -0.08083169560671531
+          }
+        },
+        "h5_participation": {
+          "BTCUSDT": {
+            "top": 20,
+            "bottom": 7
+          },
+          "ETHUSDT": {
+            "top": 14,
+            "bottom": 14
+          },
+          "BNBUSDT": {
+            "top": 23,
+            "bottom": 11
+          },
+          "SOLUSDT": {
+            "top": 13,
+            "bottom": 10
+          },
+          "XRPUSDT": {
+            "top": 16,
+            "bottom": 17
+          },
+          "DOGEUSDT": {
+            "top": 5,
+            "bottom": 12
+          },
+          "SHIBUSDT": {
+            "top": 4,
+            "bottom": 19
+          },
+          "PEPEUSDT": {
+            "top": 13,
+            "bottom": 18
+          }
+        },
+        "h5_group_forward_pct": {
+          "top_mean_pct": 2.693593092204575,
+          "middle_mean_pct": 1.245990115574361,
+          "bottom_mean_pct": 2.8552564834180054
+        },
+        "leave_one_symbol_out": {
+          "BTCUSDT": 0.02333441208856993,
+          "ETHUSDT": -0.31592656285250365,
+          "BNBUSDT": 0.03261050203486544,
+          "SOLUSDT": 0.11511397267083161,
+          "XRPUSDT": -0.5692134305534374,
+          "DOGEUSDT": 0.0474322584920449,
+          "SHIBUSDT": -0.13369758831216483,
+          "PEPEUSDT": 0.650090683821402
+        },
+        "without_best_pct": -0.30520232130061264,
+        "top1_positive_contribution": 0.14609311302650904,
+        "mfe_median_pct": 7.924226788233755,
+        "mae_median_pct": -7.979668233490166,
+        "mfe_q10_q90": [
+          4.01316543049008,
+          13.880523358348977
+        ],
+        "mae_q10_q90": [
+          -14.983929394186562,
+          -3.7490345393159257
+        ],
+        "btc_regime": {
+          "down": {
+            "count": 11,
+            "mean": -0.2731876279287927
+          },
+          "neutral": {
+            "count": 24,
+            "mean": -0.3918962577604033
+          },
+          "up": {
+            "count": 19,
+            "mean": 0.42345592266861953
+          }
+        },
+        "median_days_between_events": 14.0
+      },
+      "validation_events_per_year_universe": 26.0,
+      "validation_events_per_year_per_symbol": null,
+      "holm_p": 1.0,
+      "class": "REJECT"
+    }
+  ],
+  "secondary_exploratory": [
+    {
+      "hypothesis": "H1",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 6,
+      "n": 176,
+      "raw_mean_pct": -0.4064689252291989
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 18,
+      "n": 176,
+      "raw_mean_pct": -0.10288518569593418
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 6,
+      "n": 176,
+      "raw_mean_pct": 0.4064689252291989
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 18,
+      "n": 176,
+      "raw_mean_pct": 0.10288518569593418
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 6,
+      "n": 112,
+      "raw_mean_pct": 0.7975875828478751
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 18,
+      "n": 112,
+      "raw_mean_pct": 1.439168642331015
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 6,
+      "n": 133,
+      "raw_mean_pct": 0.19100176474296543
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 18,
+      "n": 133,
+      "raw_mean_pct": 0.868902765776505
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 6,
+      "n": 78,
+      "raw_mean_pct": 0.026388234045804267
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "4h",
+      "split": "validation",
+      "horizon_bars": 18,
+      "n": 78,
+      "raw_mean_pct": -0.08191452813976574
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 6,
+      "n": 46,
+      "raw_mean_pct": 1.3337177019342839
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 18,
+      "n": 46,
+      "raw_mean_pct": 2.410436093544506
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 6,
+      "n": 46,
+      "raw_mean_pct": -1.3337177019342839
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 18,
+      "n": 46,
+      "raw_mean_pct": -2.410436093544506
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 6,
+      "n": 32,
+      "raw_mean_pct": 1.228430761710233
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 18,
+      "n": 32,
+      "raw_mean_pct": 1.4409627946867176
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 6,
+      "n": 39,
+      "raw_mean_pct": 0.04081053625269918
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 18,
+      "n": 39,
+      "raw_mean_pct": 1.2205267481879711
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 6,
+      "n": 21,
+      "raw_mean_pct": -0.14022401594099354
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "4h",
+      "split": "diagnostic_2026",
+      "horizon_bars": 18,
+      "n": 21,
+      "raw_mean_pct": -0.7945635752290985
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 1,
+      "n": 144,
+      "raw_mean_pct": 0.2722144165425324
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 3,
+      "n": 144,
+      "raw_mean_pct": 2.288847724717104
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 14,
+      "n": 143,
+      "raw_mean_pct": 7.425598062231912
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 1,
+      "n": 144,
+      "raw_mean_pct": -0.2722144165425324
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 3,
+      "n": 144,
+      "raw_mean_pct": -2.288847724717104
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 14,
+      "n": 143,
+      "raw_mean_pct": -7.425598062231912
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 1,
+      "n": 82,
+      "raw_mean_pct": 1.3635588517375898
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 3,
+      "n": 82,
+      "raw_mean_pct": 2.3536984353493913
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 14,
+      "n": 79,
+      "raw_mean_pct": 8.553951477350251
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 1,
+      "n": 96,
+      "raw_mean_pct": -0.027556298939602614
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 3,
+      "n": 96,
+      "raw_mean_pct": 0.9882611409574865
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 14,
+      "n": 95,
+      "raw_mean_pct": 2.2702065005952696
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 1,
+      "n": 78,
+      "raw_mean_pct": 0.013827806174044631
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 3,
+      "n": 78,
+      "raw_mean_pct": -0.1974425695222889
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "validation",
+      "horizon_bars": 14,
+      "n": 77,
+      "raw_mean_pct": -0.6094156332211089
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 1,
+      "n": 44,
+      "raw_mean_pct": 0.8299482762246804
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 3,
+      "n": 44,
+      "raw_mean_pct": 1.2305437240781791
+    },
+    {
+      "hypothesis": "H1",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 14,
+      "n": 44,
+      "raw_mean_pct": 0.5070561575471536
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 1,
+      "n": 44,
+      "raw_mean_pct": -0.8299482762246804
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 3,
+      "n": 44,
+      "raw_mean_pct": -1.2305437240781791
+    },
+    {
+      "hypothesis": "H2",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 14,
+      "n": 44,
+      "raw_mean_pct": -0.5070561575471536
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 1,
+      "n": 29,
+      "raw_mean_pct": 0.626350044664512
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 3,
+      "n": 29,
+      "raw_mean_pct": -0.7808685936236688
+    },
+    {
+      "hypothesis": "H3",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 14,
+      "n": 29,
+      "raw_mean_pct": -3.319648745798859
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 1,
+      "n": 31,
+      "raw_mean_pct": 0.5197071489171838
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 3,
+      "n": 31,
+      "raw_mean_pct": 1.1279209161770274
+    },
+    {
+      "hypothesis": "H4",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 14,
+      "n": 31,
+      "raw_mean_pct": 0.827113529914418
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 1,
+      "n": 21,
+      "raw_mean_pct": -0.09530318033824199
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 3,
+      "n": 21,
+      "raw_mean_pct": -0.6493071444098918
+    },
+    {
+      "hypothesis": "H5",
+      "timeframe": "1d",
+      "split": "diagnostic_2026",
+      "horizon_bars": 14,
+      "n": 20,
+      "raw_mean_pct": -1.4991814000501018
+    }
+  ],
+  "overall_verdict": "WEAK_HIGHER_TIMEFRAME_EFFECTS_ONLY",
+  "strategy_design": "NO",
+  "technical_v1_change": "NO",
+  "PAPER_change": "NO",
+  "limitations": "2024-2026 previously analyzed; no pristine external holdout; event outcomes and cost hurdles are not strategy PnL"
+}

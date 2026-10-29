@@ -1,0 +1,94 @@
+{
+  "protocol_id": "futures-flow-oi-phase1-2026-10-28",
+  "frozen_before_forward_outcomes": true,
+  "status": "FROZEN",
+  "scope": "offline incremental information event study; no strategy or trading",
+  "source": {
+    "futures_5m": "https://data.binance.vision/data/futures/um/monthly/klines/{futures_symbol}/5m/{futures_symbol}-5m-{month}.zip",
+    "publisher_checksum_suffix": ".CHECKSUM",
+    "funding": "https://fapi.binance.com/fapi/v1/fundingRate",
+    "spot_2024_2025": "runtime/walk_forward/data/{spot_symbol}_{timeframe}_2024-01-01_2026-01-01.csv",
+    "spot_2026_4h": "reports/OOS_2026_DATA/{spot_symbol}_4h_2026-01-01_2026-10-26T04.csv"
+  },
+  "universe": {
+    "BTCUSDT": "BTCUSDT",
+    "ETHUSDT": "ETHUSDT",
+    "BNBUSDT": "BNBUSDT",
+    "SOLUSDT": "SOLUSDT",
+    "XRPUSDT": "XRPUSDT",
+    "DOGEUSDT": "DOGEUSDT",
+    "SHIBUSDT": "1000SHIBUSDT",
+    "PEPEUSDT": "1000PEPEUSDT"
+  },
+  "contract_multiplier": {"SHIBUSDT": 1000, "PEPEUSDT": 1000},
+  "period_utc": {"start_inclusive": "2024-01-01T00:00:00Z", "end_exclusive": "2026-10-01T00:00:00Z", "reason_end": "last complete published monthly archive; avoid partial October"},
+  "timeframes": {
+    "1h": {"closed_5m_count": 12, "horizons_bars": [1, 3, 6, 12, 24], "primary_horizon_bars": 6, "last_target_before": "2026-01-01T00:00:00Z"},
+    "4h": {"closed_5m_count": 48, "horizons_bars": [1, 3, 6, 12], "primary_horizon_bars": 3, "last_target_before": "2026-10-01T00:00:00Z"}
+  },
+  "oi_causality": {
+    "decision": "OI_CAUSALITY_UNCONFIRMED",
+    "reason": "REST openInterestHist timestamp is documented as period end, but publisher does not document archive metrics.create_time mapping, measurement interval, or point-in-time availability; no safe causal conversion can be proven",
+    "predictive_tests": false,
+    "hypotheses_not_tested": ["H3", "H5"]
+  },
+  "causality": {
+    "decision_time": "UTC interval boundary T after all constituent 5m candles close; each raw closeTime <= T-1ms",
+    "funding_availability": "fundingTime < T strictly; do not use future next funding rate",
+    "target_start": "Spot close at T-1ms; future bar high/low/close only after T; no executable entry claim",
+    "no_bfill": true,
+    "no_cross_split_target": true,
+    "publisher_archive_lag_caveat": "historical archive does not itself prove zero live publication latency"
+  },
+  "features": {
+    "flow": ["current_imbalance=sum(2*takerBuyBaseVolume-volume)/sum(volume)", "trailing_3_interval_imbalance=volume_weighted mean of prior 3 complete intervals", "persistence=share of prior 3 complete interval imbalance signs matching current sign", "acceleration=current_imbalance-trailing_3_interval_imbalance", "taker_buy_share=sum(takerBuyBaseVolume)/sum(volume)", "trade_count_context=log1p(current trades)-log1p(median prior 24 intervals)"],
+    "funding": ["latest strictly past realized funding rate", "sign(latest rate)", "mean of last 3 strictly past rates", "absolute rate percentile against strictly past 90 days, min 30 records"],
+    "price_spot": ["returns over 1,3,6 completed bars", "current high-low divided by prior close", "rolling 12-bar mean absolute return", "current volume versus prior 24-bar median", "close versus prior 24-bar mean"],
+    "price_futures": ["same five price/volume controls from aggregated futures 5m bars without taker fields"],
+    "zero_volume": "NULL flow imbalance and exclude feature-dependent row; never divide by zero",
+    "missing": "No forward fill across missing bars; funding latest valid for at most 24h, else NULL; drop same rows across A/A2/B/C model comparisons; report dropped counts"
+  },
+  "targets": ["signed Spot close-to-close forward return in percent", "absolute Spot forward return in percent", "directional forward MFE and MAE from future Spot high/low in percent"],
+  "controls": {
+    "A": "Spot OHLCV only",
+    "A2": "Spot plus futures OHLCV excluding taker fields; main incremental control",
+    "B": "flow and funding only",
+    "C": "A2 plus flow and funding on identical complete rows",
+    "model": "per-symbol, per-timeframe Ridge(alpha=10) with discovery-only standardization; intercept; same rows; no hyperparameter search",
+    "primary_model_metric": "validation MSE reduction (A2-C)/A2 for signed return; positive means incremental information"
+  },
+  "splits": {
+    "discovery": ["2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z"],
+    "validation": ["2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+    "contaminated_2026_diagnostic_4h_only": ["2026-01-01T00:00:00Z", "2026-10-01T00:00:00Z"],
+    "contamination": "prior project research examined 2024-2025 OHLCV and 2026 4h; these are chronological internal checks, not pristine external holdout",
+    "purge": "exclude any row whose primary or secondary target extends beyond segment end"
+  },
+  "hypotheses": {
+    "H1": "Flow continuation: abs(current imbalance)>=discovery q75, aligned with current futures price move; directional forward return residual above A2-predicted directional return >0",
+    "H2": "Flow exhaustion: abs(current imbalance)>=discovery q90 and abs(current futures return)>=discovery q75, signs aligned; directional forward return residual below 0",
+    "H3": "Price x OI: NOT TESTED because OI causality unconfirmed",
+    "H4": "Funding crowding: abs(latest known funding)>=discovery q90; forward absolute return residual above A2-predicted absolute return >0",
+    "H5": "Flow + OI: NOT TESTED because OI causality unconfirmed"
+  },
+  "thresholds": "Per symbol and timeframe broad quantiles from discovery features only; q75/q90 fixed before validation. No threshold search.",
+  "primary_comparisons": ["H1/1h/6 bars", "H1/4h/3 bars", "H2/1h/6 bars", "H2/4h/3 bars", "H4/1h/6 bars", "H4/4h/3 bars"],
+  "secondary_horizons": "exploratory; no post-hoc selection",
+  "costs_pct_round_trip": {"zero": 0.0, "base": 0.3, "double": 0.6},
+  "inference": {"cluster": "UTC ISO calendar week, all symbols in same resample block", "bootstrap_repetitions": 500, "seed": 20261028, "familywise": "Holm adjustment across six primary one-sided tests", "non_iid_warning": "overlapping targets and cross-symbol dependence"},
+  "pass": {
+    "minimum_primary_event_count": 100,
+    "minimum_event_weeks": 12,
+    "ROBUST": "validation effect correct sign; Holm-adjusted one-sided p<0.05; 2026 4h diagnostic same sign; >=6/8 symbols correct sign; all leave-one-symbol-out correct sign; C improves A2 MSE by >=0.001; effect >=0.3pp and remains >0 after 0.6pp hurdle; no leakage",
+    "PROMISING": "validation effect correct sign and C improves A2 MSE, but at least one ROBUST condition missing",
+    "WEAK": "validation effect correct sign but no clear incremental C>A2 or too few events",
+    "REJECT": "validation effect wrong sign or zero, or integrity fails",
+    "no_strategy_claim": true
+  },
+  "download_budget": {"monthly_zip_files": 264, "checksum_files": 264, "funding_requests_estimate": 40, "total_requests_estimate": 568, "expected_zip_bytes_approx": 110000000, "hard_zip_bytes_limit": 225443840, "working_disk_limit_bytes": 2147483648, "free_disk_before_download_bytes_approx": 44023414784},
+  "storage": "immutable raw ZIP/JSON and manifest, normalized CSV.gz per symbol/timeframe because pyarrow unavailable; separate research directory",
+  "no_production_changes": true,
+  "no_orders": true,
+  "no_deepseek": true,
+  "no_commit_push": true
+}
