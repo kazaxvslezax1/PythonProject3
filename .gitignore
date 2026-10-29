@@ -18,3 +18,14 @@ runtime/
 backend/trading_data.json
 *.log
 *.tmp
+
+# Local market-data downloads and derived research datasets; keep small manifests.
+/reports/FUTURES_FLOW_OI_DATA/*
+!/reports/FUTURES_FLOW_OI_DATA/manifest.json
+/reports/FUTURES_SPOT_BASIS_DATA/*
+!/reports/FUTURES_SPOT_BASIS_DATA/manifest.json
+/reports/HIGHER_TIMEFRAME_EDGE_DATA/*
+!/reports/HIGHER_TIMEFRAME_EDGE_DATA/manifest.json
+/reports/OOS_2026_DATA/
+# Generated 23 MiB event-detail JSON; the compact Markdown report remains visible.
+/reports/MARKET_EDGE_DISCOVERY.json
