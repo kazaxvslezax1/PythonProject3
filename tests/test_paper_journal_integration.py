@@ -1,9 +1,7 @@
 """Telegram -> local API -> SQLite -> Telegram report, without network or paid AI calls."""
 
-import os
 import sqlite3
 from datetime import timedelta, timezone
-from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -197,8 +195,10 @@ def test_api_and_telegram_relative_path_same_across_cwd(tmp_path, monkeypatch, s
     import ai_runtime
     import app as api
 
-    root = Path(__file__).resolve().parents[1]
-    relative = os.path.relpath(tmp_path / "shared.sqlite3", root)
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    monkeypatch.setattr("paper_journal.DEFAULT_PATH", project_root / "runtime" / "paper.sqlite3")
+    relative = "shared.sqlite3"
     monkeypatch.setenv("PAPER_JOURNAL_PATH", relative)
     api_cwd = tmp_path / "api"
     telegram_cwd = tmp_path / "telegram"
@@ -214,9 +214,10 @@ def test_api_and_telegram_relative_path_same_across_cwd(tmp_path, monkeypatch, s
     bot = telegram(api)
     monkeypatch.chdir(api_cwd)
     command(bot, "deepseek")
+    api_path = journal_path()
     monkeypatch.chdir(telegram_cwd)
     output = command(bot, "paper_report", "/paper_report")
-    assert journal_path() == (tmp_path / "shared.sqlite3").resolve()
+    assert api_path == journal_path() == (project_root / relative).resolve()
     assert PaperJournal().report()["signals"] == 1
     assert "ВНИМАНИЕ: API и Telegram читают разные" not in output
     assert not (api_cwd / relative).exists()

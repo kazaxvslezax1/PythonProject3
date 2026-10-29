@@ -22,7 +22,8 @@ class Bot:
         self.messages.append(text)
 
 
-def test_commands(tmp_path, snapshot):
+def test_commands(tmp_path, snapshot, monkeypatch):
+    monkeypatch.setenv("AI_MODE", "ADVISORY")
     bot = Bot()
     a = analyzer(tmp_path, snapshot, lambda req: response())
     register_ai_handlers(bot, analyzer=a, snapshot_loader=lambda *a: snapshot, runner=asyncio.run)

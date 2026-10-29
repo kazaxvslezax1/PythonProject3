@@ -83,8 +83,10 @@ def scanner_for(
     ai=None,
     prefilter_pass=True,
     ai_on_hold=True,
+    mode="ADVISORY",
     **settings,
 ):
+    monkeypatch.setenv("AI_MODE", mode)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     if prefilter_pass:
         # These legacy tests exercise the AI/recovery path, independent of eligibility.
@@ -117,6 +119,20 @@ def scanner_for(
     )
     result.store.register_experiment(config.experiment_id, baseline_config(config), start)
     return result
+
+
+def test_ai_mode_off_keeps_technical_observation_without_ai(candles, tmp_path, monkeypatch):
+    frame = candles(n=130, slope=0.1, end="2026-09-28T10:00:00Z")
+    ai = FakeAnalyzer()
+    scanner = scanner_for(frame, tmp_path, monkeypatch, ai=ai, mode="OFF")
+
+    asyncio.run(scanner.scan_once())
+
+    assert scanner.journal.report()["signals"] == 1
+    assert scanner.journal.report()["ai_observations"] == 0
+    assert ai.calls == 0
+    with sqlite3.connect(scanner.journal.path) as db:
+        assert db.execute("SELECT reason FROM research_ai_requests").fetchone()[0] == ("AI_MODE_NOT_ADVISORY")
 
 
 @pytest.mark.parametrize("timeframe", ["1h", "4h"])
