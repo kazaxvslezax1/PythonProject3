@@ -169,10 +169,11 @@ def test_public_candle_pagination_and_round_trip(candles, tmp_path, monkeypatch)
         def __exit__(self, *args):
             pass
 
-        def get(self, url, *, params, timeout):
+        def get(self, url, *, params, timeout, allow_redirects):
             calls.append(params)
             assert url == "https://api.binance.com/api/v3/klines"
             assert timeout == (5, 20)
+            assert allow_redirects is False
             page = [r for r in rows if params["startTime"] <= r[0] <= params["endTime"]][:100]
 
             class Response:
@@ -186,7 +187,9 @@ def test_public_candle_pagination_and_round_trip(candles, tmp_path, monkeypatch)
 
             return Response()
 
-    monkeypatch.setattr(cli.requests, "Session", Session)
+    import binance_http
+
+    monkeypatch.setattr(binance_http, "_new_session", Session)
     monkeypatch.setattr(cli.time, "sleep", lambda _: None)
     path = tmp_path / "candles.csv"
     result = cli.download(

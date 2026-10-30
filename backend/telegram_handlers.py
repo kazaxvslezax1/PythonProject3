@@ -1,5 +1,6 @@
 import telebot
 import requests
+from binance_http import get_public
 import time
 import threading
 import json
@@ -2829,7 +2830,7 @@ def ai_scan_command(message):
                 # Получаем текущую цену
                 current_price = 0
                 try:
-                    price_response = requests.get(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
+                    price_response = get_public(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
                                                   timeout=5)
                     if price_response.status_code == 200:
                         price_data = price_response.json()
@@ -2983,7 +2984,7 @@ def smart_scan_command(message):
                 # Получаем текущую цену
                 current_price = 0
                 try:
-                    price_response = requests.get(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
+                    price_response = get_public(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
                                                   timeout=5)
                     if price_response.status_code == 200:
                         price_data = price_response.json()
@@ -9604,7 +9605,7 @@ def show_advanced_targets_from_button(chat_id, symbol, message_id):
         try:
             import requests
             url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            response = requests.get(url, timeout=3)  # Только 3 секунды!
+            response = get_public(url, timeout=3)  # Только 3 секунды!
             if response.status_code == 200:
                 data = response.json()
                 current_price = float(data['price'])

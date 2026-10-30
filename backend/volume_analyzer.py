@@ -1,6 +1,6 @@
-import requests
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import timedelta
+
+from binance_http import get_public
 
 
 class VolumeAnalyzer:
@@ -13,7 +13,7 @@ class VolumeAnalyzer:
         try:
             # Используем Binance API для получения данных об объемах
             url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
-            response = requests.get(url, timeout=10)
+            response = get_public(url, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()

@@ -1,8 +1,8 @@
+import io
+
 import matplotlib.pyplot as plt
 import pandas as pd
-import io
-import requests
-from datetime import datetime
+from binance_http import get_public
 
 
 def create_simple_chart(symbol, timeframe):
@@ -18,7 +18,7 @@ def create_simple_chart(symbol, timeframe):
             "limit": 50
         }
 
-        response = requests.get(url, params=params, timeout=10)
+        response = get_public(url, params=params, timeout=10)
         data = response.json()
 
         # Создаем DataFrame

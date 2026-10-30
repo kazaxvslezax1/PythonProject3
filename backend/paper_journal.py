@@ -26,6 +26,48 @@ JOURNAL_VERSION = "paper-observe-v1"
 MARK_INTERVAL_SECONDS = 300
 
 
+class ResearchObservationConflict(ValueError):
+    """A v2 candle cannot be attributed without immutable source provenance."""
+
+
+def v2_source_manifest_matches(config):
+    """Recheck the exact strategy and transport bytes at the journal write boundary."""
+    strategy = (
+        "strategy_engine.py",
+        "technical_indicators.py",
+        "ai_facts.py",
+        "position_manager.py",
+        "entry_prefilter.py",
+    )
+    transport = ("binance_http.py", "market_data.py")
+    strategy_hashes = config.get("strategy_source_sha256", {})
+    transport_hashes = config.get("transport_source_sha256", {})
+    if (
+        config.get("strategy_version") != STRATEGY_VERSION
+        or not isinstance(strategy_hashes, dict)
+        or not isinstance(transport_hashes, dict)
+        or set(strategy_hashes) != set(strategy)
+        or set(transport_hashes) != set(transport)
+    ):
+        return False
+    root = Path(__file__).resolve().parent
+    combined = hashlib.sha256()
+    try:
+        for name in strategy:
+            contents = (root / name).read_bytes()
+            combined.update(contents)
+            if hashlib.sha256(contents).hexdigest() != strategy_hashes[name]:
+                return False
+        if combined.hexdigest() != config.get("code_sha256"):
+            return False
+        return all(
+            hashlib.sha256((root / name).read_bytes()).hexdigest() == transport_hashes[name]
+            for name in transport
+        )
+    except OSError:
+        return False
+
+
 def now_utc():
     return datetime.now(timezone.utc).isoformat()
 
@@ -268,6 +310,24 @@ class PaperJournal:
         mode = os.environ.get("AI_MODE", "ADVISORY").upper()
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            v2 = research is not None and research.get("experiment_id") == "prospective-baseline-v2"
+            if v2:
+                experiment = db.execute(
+                    "SELECT config_json, started_at FROM research_experiments WHERE id=?",
+                    (research["experiment_id"],),
+                ).fetchone()
+                expected = research.get("experiment_config")
+                if (
+                    experiment is None
+                    or not isinstance(expected, dict)
+                    or expected.get("source_contract") != "strategy-and-paper-transport-v2"
+                    or not v2_source_manifest_matches(expected)
+                    or json.loads(experiment["config_json"]) != expected
+                    or signal.strategy_version != STRATEGY_VERSION
+                ):
+                    raise ResearchObservationConflict("V2_SOURCE_CONFIG_MISMATCH")
+                if datetime.fromisoformat(candle_close) <= datetime.fromisoformat(experiment["started_at"]):
+                    raise ResearchObservationConflict("V2_CANDLE_PREDATES_EXPERIMENT")
             existing = db.execute(
                 "SELECT id, candle_close, signal_json, market_json FROM observations WHERE id=?",
                 (signal_id,),
@@ -282,6 +342,21 @@ class PaperJournal:
                     if as_utc(row["candle_close"]) == candle_close:
                         signal_id, existing = row["id"], row
                         break
+            if v2:
+                if existing is not None:
+                    owner = db.execute(
+                        "SELECT experiment_id FROM research_observations WHERE signal_id=?",
+                        (signal_id,),
+                    ).fetchone()
+                    if owner is None or owner["experiment_id"] != research["experiment_id"]:
+                        raise ResearchObservationConflict("V2_OBSERVATION_OWNER_CONFLICT")
+                else:
+                    for row in db.execute(
+                        "SELECT candle_close FROM observations WHERE symbol=? AND timeframe=?",
+                        (signal.symbol, signal.timeframe),
+                    ):
+                        if as_utc(row["candle_close"]) == candle_close:
+                            raise ResearchObservationConflict("V2_CANDLE_ALREADY_OBSERVED")
             if existing is not None:
                 frozen = json.loads(existing["signal_json"])
                 current = signal.model_dump(mode="json")

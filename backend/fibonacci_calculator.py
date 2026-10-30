@@ -1,7 +1,5 @@
 # fibonacci_calculator.py
-import requests
-import numpy as np
-from datetime import datetime, timedelta
+from binance_http import get_public
 
 
 class FibonacciCalculator:
@@ -37,8 +35,8 @@ class FibonacciCalculator:
         """Находит ключевые уровни поддержки/сопротивления"""
         try:
             # Получаем исторические данные
-            response = requests.get(
-                f"https://api.binance.com/api/v3/klines",
+            response = get_public(
+                "https://api.binance.com/api/v3/klines",
                 params={
                     'symbol': symbol,
                     'interval': '1d',

@@ -21,7 +21,7 @@ from entry_prefilter import AI_REQUEST_POLICY, PREFILTER_REJECTED, evaluate_entr
 from hybrid_strategy import AIMode, HybridDecision, hybrid_signal
 from market_data import INTERVALS, validate_candles
 from market_snapshot import build_snapshot, live_snapshot
-from paper_journal import PaperJournal, cost_settings
+from paper_journal import PaperJournal, ResearchObservationConflict, cost_settings
 from paper_research import (
     OUTCOME_VERSION,
     REGIME_VERSION,
@@ -116,15 +116,16 @@ class ScannerConfig:
 def baseline_config(config):
     root = Path(__file__).resolve().parent
     source_hash = hashlib.sha256()
-    for name in (
+    strategy_sources = (
         "strategy_engine.py",
         "technical_indicators.py",
         "ai_facts.py",
         "position_manager.py",
         "entry_prefilter.py",
-    ):
+    )
+    for name in strategy_sources:
         source_hash.update((root / name).read_bytes())
-    return {
+    result = {
         "strategy_version": "technical-v1",
         "code_sha256": source_hash.hexdigest(),
         "symbols": list(config.symbols),
@@ -141,9 +142,21 @@ def baseline_config(config):
         "close_delay_sec": config.close_delay_sec,
         "live_max_age_sec": config.live_max_age_sec,
     }
+    if config.experiment_id == "prospective-baseline-v2":
+        result["source_contract"] = "strategy-and-paper-transport-v2"
+        result["strategy_source_sha256"] = {
+            name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in strategy_sources
+        }
+        result["transport_source_sha256"] = {
+            name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+            for name in ("binance_http.py", "market_data.py")
+        }
+    return result
 
 
 def safe_scanner_reason(exc):
+    if isinstance(exc, ResearchObservationConflict):
+        return str(exc)
     if isinstance(exc, ExperimentConfigMismatch):
         return exc.reason_code
     if isinstance(exc, ValueError):
@@ -442,6 +455,8 @@ class ResearchScanner:
                 lambda *_, **__: history,
             )
             origin = classify_origin(close, self.clock(), self.config.live_max_age_sec)
+            experiment_config = baseline_config(self.config)
+            self.store.verify_experiment(self.config.experiment_id, experiment_config)
             signal_id = self.journal.record_signal(
                 analysis,
                 origin="SCANNER_" + origin,
@@ -452,6 +467,9 @@ class ResearchScanner:
                     "regime": regime_labels(analysis),
                     "quality_bucket": quality_bucket(analysis["technical_signal"].quality),
                     "ai_request_policy": AI_REQUEST_POLICY,
+                    "experiment_config": experiment_config
+                    if self.config.experiment_id == "prospective-baseline-v2"
+                    else None,
                 },
             )
             recorded = self.store.observation(signal_id)
@@ -486,6 +504,8 @@ class ResearchScanner:
                     if observed is not None and (latest is None or observed > latest):
                         latest = observed
                 except Exception as exc:
+                    if isinstance(exc, (ExperimentConfigMismatch, ResearchObservationConflict)):
+                        raise
                     errors += 1
                     timeframe_errors += 1
                     code = scanner_error_code(exc)

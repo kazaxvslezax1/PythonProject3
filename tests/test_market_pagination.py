@@ -1,9 +1,10 @@
+import binance_http
 import pandas as pd
 import pytest
 from market_data import load_candles, validate_candles
 
 
-def test_paginated_closed_history(candles):
+def test_paginated_closed_history(candles, monkeypatch):
     df = candles(n=1302, slope=0.005)
     rows = []
     for row in df.itertuples():
@@ -36,15 +37,21 @@ def test_paginated_closed_history(candles):
             return self.data
 
     class Session:
-        def get(self, url, params, timeout):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def get(self, url, params, timeout, allow_redirects):
             calls.append(params)
             assert timeout == (5, 20)
+            assert allow_redirects is False
             data = [r for r in rows if r[0] <= params["endTime"]]
             return Reply(data[-params["limit"] :])
 
-    result = load_candles(
-        "BTCUSDT", "1h", 1200, as_of=df.close_time.iloc[-1] + pd.Timedelta(milliseconds=1), session=Session()
-    )
+    monkeypatch.setattr(binance_http, "_new_session", Session)
+    result = load_candles("BTCUSDT", "1h", 1200, as_of=df.close_time.iloc[-1] + pd.Timedelta(milliseconds=1))
     assert len(result) == 1200 and len(calls) == 2
     assert result.time.iloc[0] == df.time.iloc[-1200]
     assert "close_time" in result

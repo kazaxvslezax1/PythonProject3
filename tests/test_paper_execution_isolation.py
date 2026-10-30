@@ -52,15 +52,18 @@ def research_position(tmp_path, monkeypatch, snapshot):
     return journal, manager, bridge, signal_id
 
 
-def test_existing_prospective_config_accepts_only_approved_execution_patch(tmp_path):
+def test_existing_prospective_config_rejects_all_source_transitions(tmp_path):
     store = ResearchStore(PaperJournal(tmp_path / "paper.sqlite3"))
     old_hash = "3b4ac4fe4ed621dea7cdcc1fec042af01c999d5b9d6be9c286b5b89c1934a712"
     new_hash = "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1"
     old = {"strategy_version": "technical-v1", "code_sha256": old_hash, "symbols": ["BTCUSDT"]}
     store.register_experiment("prospective-baseline-v1", old)
-    assert store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": new_hash})
+    assert store.register_experiment("prospective-baseline-v1", old)
+    with pytest.raises(ValueError, match="new PAPER_EXPERIMENT_ID"):
+        store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": new_hash})
     policy_hash = baseline_config(ScannerConfig())["code_sha256"]
-    assert store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": policy_hash})
+    with pytest.raises(ValueError, match="new PAPER_EXPERIMENT_ID"):
+        store.register_experiment("prospective-baseline-v1", {**old, "code_sha256": policy_hash})
     assert store.experiment_config("prospective-baseline-v1")["code_sha256"] == old_hash
     with pytest.raises(ValueError):
         store.register_experiment(

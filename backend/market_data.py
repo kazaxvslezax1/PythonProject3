@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
-import requests
+from binance_http import get_public
 
 INTERVALS = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "6h": 21600, "1d": 86400}
 
@@ -62,18 +62,17 @@ def validate_candles(df, timeframe, as_of=None, min_bars=50, require_fresh=True)
     return df.reset_index(drop=True)
 
 
-def load_candles(symbol, timeframe="15m", limit=200, as_of=None, session=None):
+def load_candles(symbol, timeframe="15m", limit=200, as_of=None):
     symbol = normalize_symbol(symbol)
     if timeframe not in INTERVALS or not 1 <= limit <= 100000:
         raise ValueError("Invalid timeframe or candle count")
     cutoff = utc(as_of)
     end = int(cutoff.timestamp() * 1000) - 1
     rows = []
-    get = (session or requests).get
     # Backward pagination, including one possible open candle.
     while len(rows) < limit + 1:
         count = min(1000, limit + 1 - len(rows))
-        response = get(
+        response = get_public(
             "https://api.binance.com/api/v3/klines",
             params={"symbol": symbol, "interval": timeframe, "limit": count, "endTime": end},
             timeout=(5, 20),

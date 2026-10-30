@@ -120,30 +120,26 @@ class ResearchStore:
             stored.pop("auto_paper_entries", None)
             comparable = dict(config)
             comparable.pop("auto_paper_entries", None)
-            # Explicitly approved source transitions preserve this prospective experiment.
-            # The new hash includes the shared prefilter. Keep the frozen JSON unchanged;
-            # all other source changes and research-parameter changes still fail closed.
-            approved_source_transition = (
-                experiment_id == "prospective-baseline-v1"
-                and stored.get("code_sha256")
-                in {
-                    "3b4ac4fe4ed621dea7cdcc1fec042af01c999d5b9d6be9c286b5b89c1934a712",
-                    "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1",
-                }
-                and comparable.get("code_sha256")
-                in {
-                    "583cb7bb3d6429a3796b5f4d58a0ec27f9074e54021ff33f744538b2c2c168b1",
-                    "9393f3b4c2cd11f9a8928bd4dcb1b3da5bc099da2150644e028e9e3279263e2b",
-                }
-                and stored.get("code_sha256") != comparable.get("code_sha256")
-                and {key: value for key, value in stored.items() if key != "code_sha256"}
-                == {key: value for key, value in comparable.items() if key != "code_sha256"}
-            )
-            if stored != comparable and not approved_source_transition:
+            if stored != comparable:
                 raise ExperimentConfigMismatch(
                     "Experiment configuration changed; choose a new PAPER_EXPERIMENT_ID"
                 )
             return row["started_at"]
+
+    def verify_experiment(self, experiment_id, config):
+        """Fail closed if source files or immutable settings changed after startup."""
+        with self.journal.connect() as db:
+            row = db.execute(
+                "SELECT config_json FROM research_experiments WHERE id=?", (experiment_id,)
+            ).fetchone()
+        if row is None:
+            raise ExperimentConfigMismatch("Research experiment is not registered")
+        stored = json.loads(row["config_json"])
+        stored.pop("auto_paper_entries", None)
+        comparable = dict(config)
+        comparable.pop("auto_paper_entries", None)
+        if stored != comparable:
+            raise ExperimentConfigMismatch("Experiment source or configuration changed")
 
     def record_operation_mode(self, experiment_id, auto_paper_entries):
         """Audit an opt-in execution switch without rewriting the frozen experiment."""

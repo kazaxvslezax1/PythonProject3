@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 
-import requests
+from binance_http import get_public
 from market_data import normalize_symbol
 from signal_models import TradePlan
 
@@ -55,7 +55,7 @@ class ExchangeRules:
 
 
 def get_exchange_rules(symbol):
-    response = requests.get(
+    response = get_public(
         "https://api.binance.com/api/v3/exchangeInfo",
         params={"symbol": normalize_symbol(symbol)},
         timeout=(5, 20),

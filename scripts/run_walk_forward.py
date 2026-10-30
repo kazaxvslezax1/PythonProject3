@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 import pandas as pd
-import requests
+from binance_http import get_public
 from market_data import INTERVALS, normalize_symbol, validate_candles
 from signal_models import TradingSignal
 from storage import atomic_json
@@ -25,33 +25,32 @@ def download(symbol, timeframe, start, end, path):
     cursor = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
     rows = []
-    with requests.Session() as session:
-        while cursor < end_ms:
-            response = None
-            for attempt in range(3):
-                response = session.get(
-                    "https://api.binance.com/api/v3/klines",
-                    params={
-                        "symbol": symbol,
-                        "interval": timeframe,
-                        "startTime": cursor,
-                        "endTime": end_ms - 1,
-                        "limit": 1000,
-                    },
-                    timeout=(5, 20),
-                )
-                if response.status_code not in (429, 500, 502, 503, 504):
-                    break
-                time.sleep(1 + attempt)
-            response.raise_for_status()
-            page = response.json()
-            if not page:
+    while cursor < end_ms:
+        response = None
+        for attempt in range(3):
+            response = get_public(
+                "https://api.binance.com/api/v3/klines",
+                params={
+                    "symbol": symbol,
+                    "interval": timeframe,
+                    "startTime": cursor,
+                    "endTime": end_ms - 1,
+                    "limit": 1000,
+                },
+                timeout=(5, 20),
+            )
+            if response.status_code not in (429, 500, 502, 503, 504):
                 break
-            if not isinstance(page, list) or int(page[0][0]) < cursor:
-                raise ValueError("Invalid Binance pagination")
-            rows.extend([[r[0], r[6], *r[1:6]] for r in page])
-            cursor = int(page[-1][0]) + INTERVALS[timeframe] * 1000
-            time.sleep(0.08)
+            time.sleep(1 + attempt)
+        response.raise_for_status()
+        page = response.json()
+        if not page:
+            break
+        if not isinstance(page, list) or int(page[0][0]) < cursor:
+            raise ValueError("Invalid Binance pagination")
+        rows.extend([[r[0], r[6], *r[1:6]] for r in page])
+        cursor = int(page[-1][0]) + INTERVALS[timeframe] * 1000
+        time.sleep(0.08)
     frame = pd.DataFrame(rows, columns=["time", "close_time", "open", "high", "low", "close", "volume"])
     for key in ("time", "close_time"):
         frame[key] = pd.to_datetime(frame[key], unit="ms", utc=True)

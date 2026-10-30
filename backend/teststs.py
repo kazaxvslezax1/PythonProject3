@@ -92,7 +92,9 @@ class AutoTradeManager:
             # Используем упрощенный метод получения цены
             url = f"https://api.binance.com/api/v3/ticker/price"
             params = {'symbol': symbol}
-            response = requests.get(url, params=params, timeout=10)
+            from binance_http import get_public
+
+            response = get_public(url, params=params, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()

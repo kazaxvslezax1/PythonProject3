@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-import requests
+from binance_http import get_public
 from entry_prefilter import MIN_ENTRY_QUALITY, MIN_ENTRY_VOLUME_RATIO, evaluate_entry_prefilter
 
 
@@ -336,7 +336,7 @@ class AutoTradeManager:
             # Используем упрощенный метод получения цены
             url = "https://api.binance.com/api/v3/ticker/price"
             params = {"symbol": symbol}
-            response = requests.get(url, params=params, timeout=10)
+            response = get_public(url, params=params, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()

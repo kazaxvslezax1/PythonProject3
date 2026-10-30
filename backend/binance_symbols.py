@@ -1,13 +1,13 @@
-import requests
 import json
-from datetime import datetime
+
+from binance_http import get_public
 
 
 def get_all_usdt_pairs():
     """Получает все доступные пары USDT с Binance"""
     try:
         print("🔄 Получаю список всех пар с Binance...")
-        response = requests.get('https://api.binance.com/api/v3/exchangeInfo', timeout=10)
+        response = get_public('https://api.binance.com/api/v3/exchangeInfo', timeout=10)
 
         if response.status_code == 200:
             data = response.json()
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     symbols = get_all_usdt_pairs()
     if symbols:
         print(f"📊 Примеры: {symbols[:10]}...")
-        print(f"💾 Сохраняю в файл...")
+        print("💾 Сохраняю в файл...")
 
         # Сохраняем в файл
         with open("all_usdt_pairs.json", "w") as f:

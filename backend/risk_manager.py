@@ -1,4 +1,6 @@
 import requests
+from binance_http import get_public
+
 
 class RiskManager:
     def __init__(self):
@@ -46,7 +48,7 @@ class RiskManager:
         try:
             # ИСПОЛЬЗУЕМ API БИНАНСА (самый распространенный)
             url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            response = requests.get(url, timeout=5)
+            response = get_public(url, timeout=5)
             response.raise_for_status()  # Вызывает исключение для плохих ответов
             data = response.json()
 
@@ -101,4 +103,3 @@ class RiskManager:
 
 # Глобальный экземпляр
 risk_manager = RiskManager()
-
