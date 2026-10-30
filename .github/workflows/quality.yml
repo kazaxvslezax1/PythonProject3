@@ -27,6 +27,29 @@ jobs:
             backend/requirements.txt
             requirements-dev.txt
       - run: python -m pip install -r requirements-dev.txt
+      - name: Fetch verified frozen research datasets
+        run: |
+          set -euo pipefail
+          data_dir="$RUNNER_TEMP/research-data-btcusdt-v1"
+          mkdir -p "$data_dir"
+          base_url="https://github.com/kazaxvslezax1/PythonProject3/releases/download/research-data-btcusdt-v1"
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$data_dir/BTCUSDT_1h_2024-01-01_2026-01-01.csv" \
+            "$base_url/BTCUSDT_1h_2024-01-01_2026-01-01.csv"
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$data_dir/BTCUSDT_1h.csv.gz" \
+            "$base_url/BTCUSDT_1h.csv.gz"
+          test "$(wc -c < "$data_dir/BTCUSDT_1h_2024-01-01_2026-01-01.csv")" -eq 1862001
+          test "$(wc -c < "$data_dir/BTCUSDT_1h.csv.gz")" -eq 2140399
+          printf '%s  %s\n' \
+            3d30bd2b046d9c1ae8af77259b95d55341a5667d566a90a0a47ba6d238d50f03 \
+            "$data_dir/BTCUSDT_1h_2024-01-01_2026-01-01.csv" \
+            f83997fa6ea0aaa38b0050589b3c95ddebb999a09abe5cf9f880482b5f803c16 \
+            "$data_dir/BTCUSDT_1h.csv.gz" | sha256sum --check
+          install -D -m 0644 "$data_dir/BTCUSDT_1h_2024-01-01_2026-01-01.csv" \
+            runtime/walk_forward/data/BTCUSDT_1h_2024-01-01_2026-01-01.csv
+          install -D -m 0644 "$data_dir/BTCUSDT_1h.csv.gz" \
+            reports/FUTURES_FLOW_OI_DATA/normalized/futures_aggregate/BTCUSDT_1h.csv.gz
       - run: python -m pytest
       - run: python -m ruff check .
       - run: python -m ruff format --check .
