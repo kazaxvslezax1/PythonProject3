@@ -1,9 +1,10 @@
+import os
 import telebot
 import requests
 import time
 
 # ТВОЙ ТОКЕН (замени на настоящий!)
-TELEGRAM_TOKEN = "8238637250:AAE-jXOQgJ9LhlZAd5Rj105ekna6UC_BgFY"
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # Создаем бота
 bot = telebot.TeleBot(TELEGRAM_TOKEN)

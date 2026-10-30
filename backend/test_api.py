@@ -14,7 +14,7 @@ def test_gemini_api():
             print(f"Testing: {url}")
 
             try:
-                response = requests.get(url)
+                response = requests.get(url, timeout=(5, 20))
                 if response.status_code == 200:
                     data = response.json()
                     print(f"✅ {symbol} {tf}: OK ({len(data)} свечей)")

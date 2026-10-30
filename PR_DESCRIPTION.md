@@ -1,0 +1,5 @@
+Trading signals previously used inconsistent indicator/target paths and the backtest could skip position exits on HOLD bars. This change shares closed-candle technical signals, validates trade plans, and processes each execution bar with next-open entries, partial exits, fees and equity-based drawdown.
+
+Adds bounded asynchronous DeepSeek review (OFF / ADVISORY / veto-only FILTER), validated JSON responses, persistent budget/cache/audit records, Telegram AI commands and offline historical replay. Extracts market data, strategy, execution, storage and Telegram runtime from the entrypoint. Adds pytest, Ruff and secret checks in GitHub Actions. No real-order execution or deployment is enabled.
+
+Validation and remaining limitations are documented in IMPLEMENTATION_REPORT.md. Live Telegram/DeepSeek checks and empirical AI performance are not established. Previously tracked secrets were removed from current sources/index, but historical credentials must be revoked and history remediation reviewed separately. Legacy auxiliary handlers still require follow-up review.

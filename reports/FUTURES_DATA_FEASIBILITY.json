@@ -1,0 +1,116 @@
+{
+  "report": "FUTURES_DATA_FEASIBILITY",
+  "as_of_utc": "2026-10-27T23:12:26Z",
+  "scope": "Read-only feasibility; no bulk download, trading, DeepSeek, production collector or strategy change",
+  "previous_result": {
+    "hypothesis": "breakout_24_btc_range/4h",
+    "verdict": "NOT CONFIRMED",
+    "oos_n": 222,
+    "oos_base_mean_pct": -1.7087796592799451,
+    "source": "reports/OOS_2026_CONFIRMATION.json"
+  },
+  "official_sources": {
+    "usd_m_rest": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data",
+    "usd_m_market_ws": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/ws-streams/market",
+    "usd_m_public_ws": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/ws-streams/public",
+    "public_data_readme": "https://github.com/binance/binance-public-data/blob/master/README.md",
+    "archive_base": "https://data.binance.vision/data/futures/um"
+  },
+  "probe_method": "Public exchangeInfo GET; fundingRate GET limit=1; ZIP HEAD; three small metrics ZIP GET in memory. HEAD 200 verifies only that specific object. No API keys or orders.",
+  "symbol_map": [
+    {"spot": "BTCUSDT", "usd_m": "BTCUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1567965300000},
+    {"spot": "ETHUSDT", "usd_m": "ETHUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1574840700000},
+    {"spot": "BNBUSDT", "usd_m": "BNBUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1581321600000},
+    {"spot": "SOLUSDT", "usd_m": "SOLUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1600066800000},
+    {"spot": "XRPUSDT", "usd_m": "XRPUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1578298800000},
+    {"spot": "DOGEUSDT", "usd_m": "DOGEUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1594371600000},
+    {"spot": "SHIBUSDT", "usd_m": "1000SHIBUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1620630000000, "basis_multiplier_validation_required": true},
+    {"spot": "PEPEUSDT", "usd_m": "1000PEPEUSDT", "status": "TRADING", "contract_type": "PERPETUAL", "quote_asset": "USDT", "margin_asset": "USDT", "onboard_ms": 1683244800000, "basis_multiplier_validation_required": true}
+  ],
+  "historical_matrix": [
+    {"source": "futures_klines_5m", "y2024": "BTC 2024-01-02 HEAD 200", "y2025": "BTC 2025-01-02 HEAD 200; monthly Jan HEAD 200", "y2026": "all eight mapped symbols 2026-09-01 HEAD 200", "coverage_not_proven": true},
+    {"source": "aggTrades", "y2024": "BTC 2024-01-02 HEAD 200", "y2025": "BTC 2025-01-02 HEAD 200", "y2026": "all eight mapped symbols 2026-09-01 HEAD 200", "coverage_not_proven": true},
+    {"source": "metrics_open_interest", "y2024": "all eight mapped symbols 2024-01-02 HEAD 200", "y2025": "BTC, 1000SHIB, 1000PEPE 2025-01-02 HEAD 200", "y2026": "BTC, 1000SHIB, 1000PEPE 2026-09-01 HEAD 200", "coverage_not_proven": true},
+    {"source": "fundingRate", "y2024": "BTC, 1000SHIB, 1000PEPE GET limit=1 returned record", "y2025": "BTC GET limit=1 returned record", "y2026": "BTC, 1000SHIB, 1000PEPE GET limit=1 returned record", "coverage_not_proven": true},
+    {"source": "mark_index_premium_klines", "y2024": "BTC daily 1h HEAD 200 for all three", "y2025": "BTC daily 5m HEAD 200 for all three", "y2026": "BTC daily 5m HEAD 200 for all three", "coverage_not_proven": true},
+    {"source": "liquidation_forceOrder", "y2024": "no verified official historical archive", "y2025": "no verified official historical archive", "y2026": "live snapshot stream documented; historical archive not established", "coverage_not_proven": true},
+    {"source": "bookTicker_depth_L2", "y2024": "no verified reproducible historical archive", "y2025": "no verified reproducible historical archive", "y2026": "current REST/WS only in checked sources", "coverage_not_proven": true}
+  ],
+  "metrics_archive_probe": {
+    "sample_days": ["2024-01-02", "2026-06-24", "2026-06-25"],
+    "symbol": "BTCUSDT",
+    "rows_per_sample_day": 288,
+    "first_label": "00:00:00",
+    "last_label": "23:55:00",
+    "columns": ["create_time", "symbol", "sum_open_interest", "sum_open_interest_value", "count_toptrader_long_short_ratio", "sum_toptrader_long_short_ratio", "count_long_short_ratio", "sum_taker_long_short_vol_ratio"],
+    "actual_availability_time_proven": false,
+    "blocking_validation": "Compare ZIP create_time and values with current-month REST openInterestHist at matching symbol/period; inspect day boundaries, duplicates, latency and changes before causal use"
+  },
+  "source_decisions": [
+    {"source": "aggressive_flow_5m_kline", "role": "information", "decision": "GO NOW", "priority": "P0", "novelty": 4, "historical_availability": 5, "complexity": 2, "storage_cost": 2, "timestamp_reliability": 4, "relevance_1h_4h": 5, "research_value": 5, "new_beyond_spot_ohlcv": "Taker-buy share and signed aggressive volume", "caveat": "OHLCV futures price/volume alone is not enough; use taker fields"},
+    {"source": "open_interest_metrics", "role": "information", "decision": "GO NOW", "gate": "timestamp_semantics_validation_before_replay", "priority": "P0 conditional", "novelty": 5, "historical_availability": 4, "complexity": 3, "storage_cost": 2, "timestamp_reliability": 2, "relevance_1h_4h": 5, "research_value": 4, "new_beyond_spot_ohlcv": "Open contracts and value, not traded volume", "caveat": "ZIP create_time is not documented as information-available time"},
+    {"source": "funding_history", "role": "information", "decision": "GO NOW", "priority": "P1", "novelty": 4, "historical_availability": 4, "complexity": 2, "storage_cost": 1, "timestamp_reliability": 4, "relevance_1h_4h": 4, "research_value": 4, "new_beyond_spot_ohlcv": "Realized financing/crowding cost", "caveat": "May duplicate trailing trend/premium; use only fundingTime <= decision time"},
+    {"source": "liquidation_snapshots", "role": "information", "decision": "COLLECT PROSPECTIVELY", "priority": "P2", "novelty": 4, "historical_availability": 1, "complexity": 4, "storage_cost": 3, "timestamp_reliability": 3, "relevance_1h_4h": 3, "research_value": 2, "new_beyond_spot_ohlcv": "Forced-order events", "caveat": "WS provides only latest event per symbol per 1000ms, not total liquidations"},
+    {"source": "best_bid_ask_spread", "role": "execution+information", "decision": "COLLECT PROSPECTIVELY", "priority": "P2", "novelty": 3, "historical_availability": 1, "complexity": 3, "storage_cost": 2, "timestamp_reliability": 4, "relevance_1h_4h": 3, "research_value": 3, "new_beyond_spot_ohlcv": "Quoted spread and displayed top liquidity; mainly execution realism", "caveat": "No verified historical quote archive"},
+    {"source": "full_L2_order_book", "role": "execution+information", "decision": "REJECT FOR CURRENT HORIZON", "priority": "P3", "novelty": 5, "historical_availability": 1, "complexity": 5, "storage_cost": 5, "timestamp_reliability": 2, "relevance_1h_4h": 2, "research_value": 2, "new_beyond_spot_ohlcv": "Displayed multi-level liquidity", "caveat": "Snapshot/diff reconstruction, high churn and no validated 2024-26 archive"},
+    {"source": "futures_spot_basis", "role": "information", "decision": "GO NOW", "priority": "P1", "novelty": 4, "historical_availability": 4, "complexity": 3, "storage_cost": 2, "timestamp_reliability": 4, "relevance_1h_4h": 4, "research_value": 4, "new_beyond_spot_ohlcv": "Cross-market futures premium/discount", "caveat": "Normalize 1000SHIB/1000PEPE multiplier; mark-index premium is different"}
+  ],
+  "deferred_raw_sources": ["aggTrades bulk", "individual trades bulk", "full L2", "third-party liquidations"],
+  "candidate_features": [
+    {"name": "taker_buy_sell_base", "definition": "B=sum(takerBuyBaseVolume); S=sum(totalBaseVolume-takerBuyBaseVolume)", "raw": "closed USD-M 5m kline", "aggregation": "5m to 1h/4h", "available": "after last constituent 5m close", "validation": "0<=B<=V; no partial candle"},
+    {"name": "normalized_taker_imbalance", "definition": "(B-S)/(B+S), null if denominator=0", "raw": "closed USD-M 5m kline", "aggregation": "1h/4h", "available": "at closed decision candle", "validation": "no future 5m openTime"},
+    {"name": "signed_flow_cvd_proxy", "definition": "signed_flow=B-S; CVD=causal cumulative signed_flow with declared start", "raw": "closed USD-M 5m kline", "aggregation": "5m/1h/4h", "available": "at closed decision candle", "validation": "normalization and reset boundaries"},
+    {"name": "flow_acceleration", "definition": "imbalance[t]-mean(imbalance[t-k:t]), k fixed before outcome", "raw": "closed USD-M 5m kline", "aggregation": "1h/4h", "available": "at closed decision candle", "validation": "rolling baseline uses shift(1)"},
+    {"name": "trade_count_mean_size", "definition": "N=numberOfTrades; mean_size=V/N if N>0", "raw": "closed USD-M 5m kline", "aggregation": "1h/4h", "available": "at closed decision candle", "validation": "exact buy/sell count unavailable from kline"},
+    {"name": "trade_count_imbalance", "definition": "(N_buy_taker-N_sell_taker)/(N_buy_taker+N_sell_taker)", "raw": "individual trades with isBuyerMaker", "aggregation": "event to 5m to 1h/4h", "available": "at closed decision candle", "validation": "deferred; aggTrade record count is not individual trade count"},
+    {"name": "large_trade_share", "definition": "sum individual qty above causally predeclared size threshold / total qty", "raw": "individual trade archive", "aggregation": "event to 5m to 1h/4h", "available": "at closed decision candle", "validation": "deferred; aggTrades grouping distorts individual size"},
+    {"name": "open_interest_change", "definition": "(OI[t]-OI[t-1])/OI[t-1] and OI value change", "raw": "official daily metrics ZIP", "aggregation": "5m to 1h/4h", "available": "only after timestamp gate and conservative lag", "validation": "timestamp semantics, missing rows, unit multiplier"},
+    {"name": "realized_funding_state", "definition": "last actual fundingRate with fundingTime <= decision timestamp; trailing percentile from past only", "raw": "fundingRate REST history", "aggregation": "native event to 1h/4h", "available": "after actual fundingTime and publication lag", "validation": "variable interval; no next scheduled rate"},
+    {"name": "normalized_futures_spot_basis", "definition": "(normalized contract trade close - spot close)/spot close", "raw": "futures and spot closed klines", "aggregation": "1h/4h", "available": "after both matched candles close", "validation": "exact UTC alignment and 1000-unit contract mapping"}
+  ],
+  "api_limits": [
+    {"endpoint": "/fapi/v1/exchangeInfo", "security": "NONE", "weight": "1", "max_rows": null, "retention": "current snapshot only"},
+    {"endpoint": "/fapi/v1/klines and mark/index/premium variants", "security": "NONE", "weight": "1/2/5/10 by limit", "max_rows": 1500, "retention": "historical archive available; verify per-file continuity", "pagination": "openTime ascending, fixed start/end and cursor"},
+    {"endpoint": "/fapi/v1/aggTrades", "security": "NONE", "weight": "20", "max_rows": 1000, "retention": "past 48 hours via REST; archive older", "pagination": "fromId or start/end (<1h), not mixed"},
+    {"endpoint": "/fapi/v1/historicalTrades", "security": "X-MBX-APIKEY", "weight": "200", "max_rows": 500, "retention": "past 1 month via REST; archive older"},
+    {"endpoint": "/futures/data/openInterestHist", "security": "NONE", "weight": "0; separate 1000 requests/5min IP", "max_rows": 500, "retention": "last 1 month via REST; metrics ZIP older"},
+    {"endpoint": "/fapi/v1/fundingRate", "security": "NONE", "weight": "shared 500/5min/IP with fundingInfo", "max_rows": 1000, "retention": "no short retention stated in checked docs", "pagination": "startTime/endTime, ascending fundingTime"},
+    {"endpoint": "/fapi/v1/ticker/bookTicker", "security": "NONE", "weight": "2 one symbol/5 all", "max_rows": null, "retention": "current snapshot only"},
+    {"endpoint": "/fapi/v1/depth", "security": "NONE", "weight": "2 to 20 by limit", "max_rows": 1000, "retention": "current snapshot only"}
+  ],
+  "storage_probe": {
+    "date": "2026-09-01",
+    "mapped_symbols": 8,
+    "zip_bytes_daily_5m_klines_total": 104814,
+    "zip_bytes_daily_aggTrades_total": 49277326,
+    "zip_bytes_daily_1m_klines_approx": 467315,
+    "est_zip_mb_per_year_5m_klines": 38.25711,
+    "est_zip_mb_per_year_metrics": 34,
+    "est_zip_gb_per_year_aggTrades": 17.98622399,
+    "basis": "Single sampled day extrapolation; not guaranteed across regimes or years"
+  },
+  "minimal_dataset_v1": {
+    "period": "2024-01-01 to latest published complete day, subject to per-symbol file manifest",
+    "sources": ["USD-M 5m klines including taker fields", "USD-M daily metrics OI with timestamp validation gate", "USD-M fundingRate historical REST"],
+    "spot_control": "Existing Spot 1h/4h OHLCV for 2024-25 and Spot 4h for 2026; Spot 1h in 2026 would require separate download; exact time/unit normalization for basis",
+    "estimated_zip_mb_2_8_years": 215,
+    "estimated_extracted_gb_2_8_years": "0.6-1.0",
+    "recommended_working_disk_gb": "1-2",
+    "estimated_requests": "~272 monthly kline ZIP + ~8240 daily metrics ZIP + ~25-40 funding pages; about 8500 total; verify missing dates before execution",
+    "estimated_duration": "tens of minutes to several hours, not measured",
+    "download_authorized_now": false
+  },
+  "anti_lookahead": "Normalize raw event/transaction/funding/snapshot time; validate; aggregate; freeze only fully closed 1h/4h features with demonstrated publication time <= close; forward outcome starts afterward; no bfill of future values",
+  "formats": {"raw": "immutable official ZIP plus publisher CHECKSUM and own SHA256", "normalized": "partitioned Parquet with typed UTC schema", "manifest": "JSON schema/source/URL/download_at/sha256/rows/period/contract multiplier/clock semantics", "not_used": "existing PAPER SQLite"},
+  "prospective_collector": {"implemented": false, "needed_for_first_v1": false, "possible_later_for": ["best bid/ask execution snapshots", "censored liquidation snapshots"], "requirements": ["separate read-only process", "receive timestamp", "reconnect/backoff", "gap detection", "health metrics", "no silent future fill"]},
+  "future_hypotheses_not_tested": ["Does closed-bar taker imbalance add to OHLCV for 1h/4h forward returns?", "Does OI change condition otherwise similar price moves?", "Does realized funding add beyond trend/premium for volatility expansion?", "Does normalized futures-spot basis add to price-only baseline?", "Does within-closed-bar late flow concentration change next-period outcome?"],
+  "incremental_test_design": "Same rows and chronology for A=OHLCV only, B=new data only, C=OHLCV+new data; for taker flow also A2=Spot+same Futures OHLCV without taker fields and require C>A2; for OI value control OI quantity+price; freeze horizons/targets/costs and timestamp rules before outcomes; purge overlapping windows; compare C vs A/A2 with temporal clusters and symbol stability",
+  "production_changed": false,
+  "strategy_created": false,
+  "collector_created": false,
+  "bulk_download": false,
+  "deepseek_calls": 0,
+  "orders": 0,
+  "commit": false,
+  "push": false
+}

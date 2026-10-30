@@ -1,0 +1,8 @@
+source,role,decision,priority,novelty,historical_availability,complexity,storage_cost,timestamp_reliability,relevance_1h_4h,research_value,new_beyond_spot_ohlcv,gate,caveat
+aggressive_flow_5m_kline,information,GO NOW,P0,4,5,2,2,4,5,5,Taker-buy share and signed aggressive volume,,OHLCV futures price/volume alone is not enough; use taker fields
+open_interest_metrics,information,GO NOW,P0 conditional,5,4,3,2,2,5,4,"Open contracts and value, not traded volume",timestamp_semantics_validation_before_replay,ZIP create_time is not documented as information-available time
+funding_history,information,GO NOW,P1,4,4,2,1,4,4,4,Realized financing/crowding cost,,May duplicate trailing trend/premium; use only fundingTime <= decision time
+liquidation_snapshots,information,COLLECT PROSPECTIVELY,P2,4,1,4,3,3,3,2,Forced-order events,,"WS provides only latest event per symbol per 1000ms, not total liquidations"
+best_bid_ask_spread,execution+information,COLLECT PROSPECTIVELY,P2,3,1,3,2,4,3,3,Quoted spread and displayed top liquidity; mainly execution realism,,No verified historical quote archive
+full_L2_order_book,execution+information,REJECT FOR CURRENT HORIZON,P3,5,1,5,5,2,2,2,Displayed multi-level liquidity,,"Snapshot/diff reconstruction, high churn and no validated 2024-26 archive"
+futures_spot_basis,information,GO NOW,P1,4,4,3,2,4,4,4,Cross-market futures premium/discount,,Normalize 1000SHIB/1000PEPE multiplier; mark-index premium is different

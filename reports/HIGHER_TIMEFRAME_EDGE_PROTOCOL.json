@@ -1,0 +1,40 @@
+{
+  "id": "higher-timeframe-spot-structure-2026-10-28-v1",
+  "status": "FROZEN_BEFORE_OUTCOMES",
+  "scope": "offline market-behavior event study; no strategy, positions or PnL",
+  "source": {
+    "new_2020_2023": "official public Binance Spot GET https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval=4h&startTime={ms}&endTime={ms}&limit=1000; only 2020-01-01..2024-01-01; 8 fixed symbols; immutable raw pages and SHA manifest",
+    "existing_2024_2025": "runtime/walk_forward/data/{symbol}_4h_2024-01-01_2026-01-01.csv with SHA from WALK_FORWARD_RESULTS.json",
+    "existing_2026": "reports/OOS_2026_DATA/{symbol}_4h_2026-01-01_2026-10-26T04.csv with SHA from OOS_2026_CONFIRMATION.json",
+    "download_limit": "at most 80,000 new 4h rows, 90 GET pages, 30 MiB raw JSON; no futures or other markets"
+  },
+  "universe": ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "SHIBUSDT", "PEPEUSDT"],
+  "timeframes": ["4h", "1d"],
+  "daily_aggregation": "UTC midnight-aligned groups of exactly six consecutive complete 4h Spot bars; open first, high max, low min, close last, volume sum; reject partial days; 4h open at 00/04/08/12/16/20 UTC and close at next boundary minus 1ms",
+  "period_utc": {"new_start_inclusive": "2020-01-01T00:00:00Z", "new_end_exclusive": "2024-01-01T00:00:00Z", "existing_end_exclusive": "2026-10-26T00:00:00Z", "discovery": ["2020-01-01T00:00:00Z", "2023-01-01T00:00:00Z"], "validation": ["2023-01-01T00:00:00Z", "2026-01-01T00:00:00Z"], "diagnostic_2026": ["2026-01-01T00:00:00Z", "2026-10-26T00:00:00Z"]},
+  "listing": "first actual complete 4h bar returned by official source is first eligible bar; no invented prelisting candles, no common-start truncation for per-symbol analysis; H5 active universe requires >=30 completed calendar days and >=5 eligible assets; common-period analysis separately uses 2023-06-01..2025-12-31, subject to actual PEPE listing",
+  "features": {
+    "volatility": "trailing 30-day standard deviation of completed log returns, 4h rolling 180 bars * sqrt(6), daily rolling 30 bars; exclude current from regime percentile baseline",
+    "normalized_move": "7-day log close return divided by trailing daily-scale sigma30*sqrt(7), computed from completed bars only",
+    "vol_state": "rank current sigma30 against strictly preceding 180 calendar days of sigma30 (1080 4h or 180 daily bars); low <1/3, normal <=2/3, high >2/3",
+    "btc_regime": "same-boundary BTC 30-day normalized return: up >0.5, down <-0.5, otherwise neutral; diagnostic only",
+    "range_state": "30-day pre-event high-low range divided by pre-event close, ranked against strictly preceding 180 such completed range observations; compressed if percentile <=0.25",
+    "trend_pullback": "30-day normalized return ending 3 days before event, using sigma30 then; pullback is current 3-day normalized return against that prior trend"
+  },
+  "hypotheses": {
+    "H1_H2": "same episodes: abs(normalized 7-day move)>=2, direction=sign(move); H1 expects directional forward excess >0 (continuation), H2 expects <0 (reversal); control moderate same-direction moves 0.5<=abs(z)<1.5 in same symbol/year/vol_state; one two-sided family test, not two opportunities",
+    "H3": "pre-event 30-day range percentile<=0.25, current completed candle close beyond preceding 30-day high/low; direction=breakout side; control other same-side 30-day breakouts with range percentile>0.25 in same symbol/year/vol_state",
+    "H4": "abs(pre-pullback 30-day z)>=1.5; current 3-day z opposite prior trend, normalized magnitude 0.5..1.5; direction=prior trend; control same trend-sign and vol_state, current 3-day signed z in [-0.5,0.5] in same symbol/year",
+    "H5": "every 14 UTC days anchored 2020-01-01T00:00Z, rank active assets by past 30-day normalized return; top two, middle, bottom two; primary effect=(mean top future Spot return - mean bottom future Spot return)/2; no prelisting membership, min active assets 5; 4h and daily use 00:00 UTC decisions"
+  },
+  "episodes": "H1/H2, H3, H4 first qualifying observation per symbol/family then 14 calendar-day cooldown; H5 one cross-section each 14-day scheduled timestamp. Controls may be more frequent and are not event entries.",
+  "targets": "primary Spot next-open to close of seventh completed future UTC day (4h=42 bars, 1d=7 bars), percent; H1-H4 direction-adjusted, H5 half long-short spread. Secondary signed 4h 6/18 bars and 1d 1/3/14 bars plus primary-horizon absolute return, MFE from future highs, MAE from future lows. Neither event candle nor current close counted as forward profit; no TP/SL.",
+  "splits_and_purge": "2020-22 discovery, 2023-25 validation (separate yearly folds), 2026 diagnostic; forward horizon must finish strictly before segment end, no cross-boundary outcomes, no random split or feature tuning; 2024-26 previously researched and validation is not pristine external holdout",
+  "control_matching": "H1-H4 per-event mean of all eligible non-event control observations in same symbol, UTC year, trailing vol_state and directional side/trend sign; if none, exclude event from primary excess and count unmatched. BTC regime up/down is reported separately, not selected on; H5 compares ranks on the same timestamp.",
+  "costs": {"zero_pct": 0.0, "base_pct": 0.3, "double_pct": 0.6, "H5_note": "H5 half-spread averages two legs, so the same per-leg 0.30/0.60 percentage-point hurdle is subtracted from half-spread; no portfolio PnL claim"},
+  "primary_comparisons": "H1/H2 competing signed excess vs matched control, H3 directional excess, H4 directional excess, H5 half-spread; all at 7-day horizon and 4h/1d; 8 independent family-by-timeframe tests, H1/H2 counted once; secondary horizons descriptive only",
+  "uncertainty": "UTC calendar-month block bootstrap 1000 resamples, seed 20261028, all symbols and concurrent events in same month block; two-sided test for H1/H2 and one-sided positive for H3-H5; Holm familywise adjustment across 8 primary tests; overlapping forward windows and shared BTC exposure remain limitations",
+  "pass": {"min_events_H1_H4": 100, "min_H5_timestamps": 50, "min_validation_months": 18, "min_positive_annual_folds": 2, "min_annual_folds": 3, "min_positive_symbols": 5, "economic_excess_min_pct": 0.6, "base_cost_pct": 0.3, "PROMISING": "expected-sign validation matched excess >=0.6pp; positive after 0.3pp raw hurdle; Holm p<0.05 and 95% month-block CI expected sign; >=2/3 validation years expected sign; >=5/8 symbols expected sign for H1-H4 (H5 leave-one-out), all leave-one-symbol-out expected sign; sufficient N/months; without best event expected sign; BTC-up and BTC-down diagnostic both expected sign if each has >=30 events", "ROBUST": "not available from this already researched history; would require genuinely unseen prospective confirmation", "WEAK": "expected-sign effect >0 but PROMISING conditions absent", "REJECT": "zero or wrong-sign validation effect or insufficient data for a meaningful test", "overall": "PROMISING_HIGHER_TIMEFRAME_HYPOTHESIS_FOUND if any PROMISING; else WEAK_HIGHER_TIMEFRAME_EFFECTS_ONLY if any WEAK; else NO_HIGHER_TIMEFRAME_EDGE_FOUND"},
+  "anti_leakage": "all feature windows trailing and closed; thresholds fixed above; no future/listing backfill; UTC exact joins; event cooldown causal; outcome starts next open; no future candle in event definition; no post-result threshold/parameter search",
+  "safety": "research files only; no production, technical-v1, PAPER, SQLite, DeepSeek, orders, commit or push"
+}

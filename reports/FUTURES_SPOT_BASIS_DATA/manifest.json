@@ -1,0 +1,222 @@
+{
+  "protocol_sha256": "1c3314be00b463c2567463b671f06d96224eddb22bf6313a48ac75f21a7de142",
+  "previous_manifest_sha256": "2b21b433ab80fdbe106f1048570eb1b22d27629b3598290b7d2af42687c8f241",
+  "series": {
+    "BTCUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/BTCUSDT_1h_2024-01-01_2026-01-01.csv": "3d30bd2b046d9c1ae8af77259b95d55341a5667d566a90a0a47ba6d238d50f03"
+        },
+        "futures_aggregate": "f83997fa6ea0aaa38b0050589b3c95ddebb999a09abe5cf9f880482b5f803c16"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "28f42e79d1b50ba21b8fd4e4d118eff704d9d03fcfbc6a63dbb2ab8c665700bf"
+    },
+    "BTCUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/BTCUSDT_4h_2024-01-01_2026-01-01.csv": "3b6480f74e9de70a00a001ad6c0d50a5695e606e4e033e9ae82b3f0ed0692729",
+          "reports/OOS_2026_DATA/BTCUSDT_4h_2026-01-01_2026-10-26T04.csv": "f63e733e52e931a959b7dc7a1089f633e069d89a1a93a2f585e2a3abaf10daf6"
+        },
+        "futures_aggregate": "3623e54016efc9445446bc6bade2d2afc2d32ce6882d138a0280a5e5424c4f36"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "0bf743eeb008350499c4ca37fb0a473b423452f51dd30aa7ec04d081686f7e37"
+    },
+    "ETHUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/ETHUSDT_1h_2024-01-01_2026-01-01.csv": "f9f16ccde18f8419ea97d701d8eb77b9cac98e6881a287eef88e2e93b1be9ee7"
+        },
+        "futures_aggregate": "6cddc294badc362ff51de8e983a3d530f5e85f809617c5d017b62a025eb6b7f8"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "09f9973d59cee40f0c0c76340ddacf42419f2c5ae8393b0e0e832fc566c45223"
+    },
+    "ETHUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/ETHUSDT_4h_2024-01-01_2026-01-01.csv": "a1ec0cb2c915649735a5dce2f34846454766b015812ae3e4e4924a0c6806aefc",
+          "reports/OOS_2026_DATA/ETHUSDT_4h_2026-01-01_2026-10-26T04.csv": "d33e173b274ddd746767c2bd141053bd5752f7a5908be9a6bd0d7abf5b613313"
+        },
+        "futures_aggregate": "465e32b7e9c0b5fbb93a549550aca78d0c89420b10a53adc7eeaa080ecabc1bd"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "bed8cf0519f731881cffbf7f18e1ee6aa37d888f2c0a03b11918dcf3819d0820"
+    },
+    "BNBUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/BNBUSDT_1h_2024-01-01_2026-01-01.csv": "090ec08afb5b882d397bae48b672fe2b2fbb51ba9590f16d1bd742a29f8d11fe"
+        },
+        "futures_aggregate": "f7ab0d9433cbf83cb003b49ac3883a8d44985614eba5f53d9d620782f38c22e2"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "e585278af343c86b75da6b9d6b0f93bdb2a02cdbcf729080550db8eac6262f2c"
+    },
+    "BNBUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/BNBUSDT_4h_2024-01-01_2026-01-01.csv": "2bdcac941e490ef9aac417990d1372b4957929a589c64b35702715c2d5b2c749",
+          "reports/OOS_2026_DATA/BNBUSDT_4h_2026-01-01_2026-10-26T04.csv": "f634bd8bc99346273400a2d52245b22fe1e1413cf0855d36476887021a0a292f"
+        },
+        "futures_aggregate": "d34117aff17308fd976eb45446f33ad8fd79fcc5b59331f3e3aed28199a87d17"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "4a1c3c1f2cdcfb22bf5e6a6de9fec46ac2c3cdac2202fde6e218861f4194c94b"
+    },
+    "SOLUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/SOLUSDT_1h_2024-01-01_2026-01-01.csv": "088ed6adcf983dfd66a1b0e25fb3e4d839b9052ce08375b541e71bcb456aaf82"
+        },
+        "futures_aggregate": "0e782157dbfd37000253224f5d1fb334b5974bfe4129f8f6c27af23794acadd5"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "001ca090f69ae89fc80afc149edf04842d6625a153e6d6586e3279135107a14e"
+    },
+    "SOLUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/SOLUSDT_4h_2024-01-01_2026-01-01.csv": "7b73728893c6b2b38379f0144ba3267572b44a70e5e8a9e461a6a27bf0413b4b",
+          "reports/OOS_2026_DATA/SOLUSDT_4h_2026-01-01_2026-10-26T04.csv": "0249d66bd9db518608abc0fc1f28fc75427e4b5a0c160756768e91965302cde8"
+        },
+        "futures_aggregate": "fa630bce49c3fa9a08c2806eee9aaccf631bc30777e4adb8808c0228a57dffc9"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "5c921a582b1af5f86028f8754e2eae34ba79455dd8b8583a6183159618e324a6"
+    },
+    "XRPUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/XRPUSDT_1h_2024-01-01_2026-01-01.csv": "1cfbc990bd9bc1bb5a8cffd4f500c0b627e064662767afc26d5b1142c4530952"
+        },
+        "futures_aggregate": "8d27c99d1a2d3f2a36953c9ea9ec93416ed781d155d65a648c62f4f60fb4ed65"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "6ec0e58d4c96ed921517730f2c373084a50836845857ec0ccddef30ae0c52663"
+    },
+    "XRPUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/XRPUSDT_4h_2024-01-01_2026-01-01.csv": "17e96162fa49af144c11aa04cc813b9f5ce8d334ddef4a787fc9ad0f8afae0df",
+          "reports/OOS_2026_DATA/XRPUSDT_4h_2026-01-01_2026-10-26T04.csv": "1b162304cb7d08fb7a0700443c95bc6607c6642d67ec1c9eccf94a2aca8a1002"
+        },
+        "futures_aggregate": "d0678f2bc6ffca270b58290d913fe51b13128ed183b2efe3e6dbf5cd975bfd28"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "3f1c87c93cd2a7adb07c3142ebd9869ef0f2e8f3c4ee253434b5512f7e863367"
+    },
+    "DOGEUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/DOGEUSDT_1h_2024-01-01_2026-01-01.csv": "32e7cce05379631bc6528d7f0732b5a2486e5d3e99ee64b248f508ffe767be25"
+        },
+        "futures_aggregate": "d341fa04b203a117352be07648770b991344affbe2fdebdf3d1484028c33dd42"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "5214c27d945e42b937cfb79c77c1534f5e30f9bcdc52ea8cc7f191793ea2d89b"
+    },
+    "DOGEUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/DOGEUSDT_4h_2024-01-01_2026-01-01.csv": "5697ce7deb44aaaa21e493c5ce678240dd20e698a15623f65e8d30dae059c1f9",
+          "reports/OOS_2026_DATA/DOGEUSDT_4h_2026-01-01_2026-10-26T04.csv": "0899bd355b1a69ad5a7be3a52790d5563bbf1fc968c726fbece6c7091d8e786e"
+        },
+        "futures_aggregate": "a647221a41bb3296175178fe275e65cafb3b8a8ca6ea7735dc5b4569761358af"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "39144c88a4587c453c3d6bdb42bf76a0958a004ba7a6d32c3558291b0585158c"
+    },
+    "SHIBUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/SHIBUSDT_1h_2024-01-01_2026-01-01.csv": "691c0e677941d7877427b23a20f2c6a15d5851e1eea845dc9946bbedbb040126"
+        },
+        "futures_aggregate": "339c80e144d5f086c6e2ddfe51a403f1e3e16b281931088c2b9376307e2a15b2"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "2f76214876dab8cad7863b5182eb31922ddec8a4e18e406b773fb198c21a97b7"
+    },
+    "SHIBUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/SHIBUSDT_4h_2024-01-01_2026-01-01.csv": "460776258773251e4211589844625bed2a0538a873827a6b8cb6093fd0e90694",
+          "reports/OOS_2026_DATA/SHIBUSDT_4h_2026-01-01_2026-10-26T04.csv": "54ee2ba591e946e6da0b77ca0591a088e6039a1e850e297de6089bb8b5d74188"
+        },
+        "futures_aggregate": "ce0e5a304882e456feb68ffe6a444059cb4d3caf11ef19ff077faaf7de0d735d"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "b8b95f1c99b374fed915c7734886625492a3c5b7c67e5697ecf702fcb9ee2fb1"
+    },
+    "PEPEUSDT_1h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/PEPEUSDT_1h_2024-01-01_2026-01-01.csv": "c6dafa968821b7f218d2aeb57905798df47db5910ed987f00831af7c20df5f67"
+        },
+        "futures_aggregate": "61fbae93ce43f9545db91f763edff8f6087b192973bfe5395bc241ff8641bdad"
+      },
+      "features_complete": 17454,
+      "discovery_rows": 8688,
+      "period_start": "2024-01-01T01:00:00+00:00",
+      "period_end": "2026-01-01T00:00:00+00:00",
+      "features_sha256": "e1b5951d5db0713ad28bbfd9086065cf72b1f839203b619a7d156ae92fab4dca"
+    },
+    "PEPEUSDT_4h": {
+      "source_sha256": {
+        "spot": {
+          "runtime/walk_forward/data/PEPEUSDT_4h_2024-01-01_2026-01-01.csv": "9af5d4ea51c70a8750e5e73a279beb07de72fd003ef3db22d39049442c9c6f47",
+          "reports/OOS_2026_DATA/PEPEUSDT_4h_2026-01-01_2026-10-26T04.csv": "83c76dfcff2db0b090ebfce45b801ed99565bf5f772ceaec160ffa109f0d76dc"
+        },
+        "futures_aggregate": "bb4fc9df6dc3fc56c9e9c8e03096908121813598a64fee002f28ee21e6ad7846"
+      },
+      "features_complete": 5934,
+      "discovery_rows": 2103,
+      "period_start": "2024-01-01T04:00:00+00:00",
+      "period_end": "2026-10-01T00:00:00+00:00",
+      "features_sha256": "f5ae6d02f8f6775c82fe225bd93f1694b183f5e6034bdc8b663c024d36914313"
+    }
+  }
+}

@@ -1,8 +1,9 @@
+import os
 import requests
 import telebot
 
 # Токен бота (ЗАМЕНИ НА СВОЙ!)
-TELEGRAM_TOKEN = "8238637250:AAE-jXOQgJ9LhlZAd5Rj105ekna6UC_BgFY"
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 API_URL = "http://127.0.0.1:8000"
 
 # Создаем бота
@@ -210,7 +211,7 @@ def analyze_command(message):
         response = requests.post(f"{API_URL}/analyze", params={
             "symbol": symbol,
             "timeframe": timeframe
-        })
+        }, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()
@@ -243,7 +244,7 @@ def analyze_smart_command(message):
 
         bot.reply_to(message, f"🧠 Умный анализ {symbol.upper()}...")
 
-        response = requests.post(f"{API_URL}/analyze-smart", params={"symbol": symbol})
+        response = requests.post(f"{API_URL}/analyze-smart", params={"symbol": symbol}, timeout=(5, 20))
 
         if response.status_code == 200:
             data = response.json()

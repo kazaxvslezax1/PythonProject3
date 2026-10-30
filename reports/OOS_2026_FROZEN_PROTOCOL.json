@@ -1,0 +1,112 @@
+{
+  "state": "FROZEN_BEFORE_2026_OUTCOMES",
+  "frozen_at_utc": "2026-10-26T04:57:22.378492+00:00",
+  "hypothesis": "breakout_24_btc_range; 4h only; WEAK post-hoc from 2024-25",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "SHIBUSDT",
+    "PEPEUSDT"
+  ],
+  "event_symbols": [
+    "ETHUSDT",
+    "BNBUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "SHIBUSDT",
+    "PEPEUSDT"
+  ],
+  "period": {
+    "start_inclusive": "2026-01-01T00:00:00Z",
+    "end_exclusive": "2026-10-26T04:00:00Z",
+    "last_open_inclusive": "2026-10-26T00:00:00Z",
+    "last_close_inclusive": "2026-10-26T03:59:59.999000Z",
+    "expected_candles_per_symbol": 1789,
+    "timezone": "UTC"
+  },
+  "source": "https://api.binance.com/api/v3/klines",
+  "warmup": "Last 120 closed 2025 4h bars per symbol, features only, never OOS outcomes",
+  "event_definition": {
+    "side": "LONG iff alt close(T)>max alt high(T-24..T-1); SHORT iff alt close(T)<min alt low(T-24..T-1); else 0",
+    "btc_context": "Exact same close_time closed BTC 4h candle; abs(C[T]-C[T-24])/sum(abs(diff(C)), last 24 changes) <= 0.15; denominator zero is not range",
+    "horizon_bars": 24,
+    "entry": "alt open(T+1)",
+    "exit": "alt close(T+24)",
+    "path": "alt high/low T+1..T+24"
+  },
+  "primary_metric": "mean(side*(close[T+24]/open[T+1]-1)*100-0.3) in percentage points",
+  "costs_pct_round_trip": {
+    "zero": 0.0,
+    "base": 0.3,
+    "double": 0.6
+  },
+  "control_A": "All alt breakout24; incremental = conditioned base mean minus non-BTC-range breakout24 base mean",
+  "control_B": "For each event, same-symbol/month all eligible 4h bars' mean signed forward return in event direction",
+  "control_C": "Same-symbol/month/causal ATR14-close tertile/24-bar momentum sign; <20 fallback month/vol; empty fallback month; includes events",
+  "eligibility": "All 24 forward bars closed inside period; finite positive ATR14 for current event/control; no imputation, no missing rows",
+  "secondary": [
+    "N",
+    "mean",
+    "median",
+    "win_fraction",
+    "p05",
+    "p10",
+    "p25",
+    "p75",
+    "p90",
+    "MFE",
+    "MAE",
+    "MFE/abs(MAE)",
+    "zero/base/double",
+    "month",
+    "symbol",
+    "leave-one-symbol-out",
+    "outliers"
+  ],
+  "bootstrap": {
+    "cluster": "ISO week",
+    "draws": 2000,
+    "seed": 20261026,
+    "lower_quantile": 0.025
+  },
+  "pass": {
+    "minimum_n": 100,
+    "minimum_event_weeks": 12,
+    "base_mean_gt_pct": 0.0,
+    "bootstrap_lower_gt_pct": 0.0,
+    "base_median_gte_pct": 0.0,
+    "double_mean_gt_pct": 0.0,
+    "positive_month_fraction_gte": 0.6,
+    "minimum_positive_months": 6,
+    "minimum_positive_symbols_with_at_least_10_events": 5,
+    "all_leave_one_symbol_out_base_gt_pct": 0.0,
+    "remove_best_event_base_mean_gt_pct": 0.0,
+    "top5pct_positive_gross_contribution_lte": 0.5,
+    "incremental_A_gt_pct": 0.0,
+    "excess_B_gt_pct": 0.0,
+    "excess_C_gt_pct": 0.0
+  },
+  "data_integrity": "Exact 4h UTC grid, 12-field Binance rows, nonduplicate, valid OHLC/volume, close_time=open+4h-1ms, no partial candles, fail closed",
+  "prior_sha256": {
+    "md": "f8ac5daaf2635c5b90ed5d4928d902419941280e4069edc96695798e11b7fcdd",
+    "json": "c6350e54c9ec235f2816f5068ad7ce08a9acc33d0fbbcb3dbcf74719fa17973e",
+    "code": "0fe0e8205234f02068acb50fb5677ef01c0339cd3b550f8de6a86a21601d71db"
+  },
+  "warmup_file_sha256": {
+    "BTCUSDT": "3b6480f74e9de70a00a001ad6c0d50a5695e606e4e033e9ae82b3f0ed0692729",
+    "ETHUSDT": "a1ec0cb2c915649735a5dce2f34846454766b015812ae3e4e4924a0c6806aefc",
+    "BNBUSDT": "2bdcac941e490ef9aac417990d1372b4957929a589c64b35702715c2d5b2c749",
+    "SOLUSDT": "7b73728893c6b2b38379f0144ba3267572b44a70e5e8a9e461a6a27bf0413b4b",
+    "XRPUSDT": "17e96162fa49af144c11aa04cc813b9f5ce8d334ddef4a787fc9ad0f8afae0df",
+    "DOGEUSDT": "5697ce7deb44aaaa21e493c5ce678240dd20e698a15623f65e8d30dae059c1f9",
+    "SHIBUSDT": "460776258773251e4211589844625bed2a0538a873827a6b8cb6093fd0e90694",
+    "PEPEUSDT": "9af5d4ea51c70a8750e5e73a279beb07de72fd003ef3db22d39049442c9c6f47"
+  },
+  "analysis_code_sha256": "f7a0362cf1c986defaebc0c1b077877867c72f38da7107c1bd1883b768e8a599",
+  "results": null
+}
